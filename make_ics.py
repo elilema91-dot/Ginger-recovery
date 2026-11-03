@@ -35,14 +35,41 @@ def load(p):
     d = json.load(open(p, encoding="utf-8"))
     return [(x["id"], x.get("data", x)) for x in d]
 
+GROUPS = {
+    "member.ics": ("강차 회원", "#2F6B4F", {"회원"}),
+    "riding.ics": ("강차 라이딩", "#C2463B", {"라이딩"}),
+    "life.ics":   ("강차 생활", "#E08A2E", None),  # 나머지 전부
+}
+
 def main():
-    events = load(sys.argv[1])
-    members = {i: mask(m.get("name", "")) for i, m in load(sys.argv[2])}  # 공개 저장소라 이름 가운데 가림
+    # 사용법2: python3 make_ics.py events.json members.json --split 출력폴더
+    if len(sys.argv) > 4 and sys.argv[3] == "--split":
+        import io, contextlib, os
+        allev = load(sys.argv[1])
+        used = set().union(*[g[2] for g in GROUPS.values() if g[2]])
+        for fn, (name, color, cats) in GROUPS.items():
+            sub = [x for x in allev if (x[1].get("cat") in cats if cats else x[1].get("cat") not in used)]
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                build(sub, sys.argv[2], name, color)
+            open(os.path.join(sys.argv[4], fn), "w", encoding="utf-8", newline="").write(buf.getvalue())
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            build(allev, sys.argv[2], "강차 일정", None)
+        open(os.path.join(sys.argv[4], "calendar.ics"), "w", encoding="utf-8", newline="").write(buf.getvalue())
+        return
+    build(load(sys.argv[1]), sys.argv[2], "강차 일정", None)
+
+def build(events, members_path, calname, color):
+    events = list(events)
+    members = {i: mask(m.get("name", "")) for i, m in load(members_path)}  # 공개 저장소라 이름 가운데 가림
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//gangcha//calendar//KO",
-         "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:강차 일정",
+         "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + calname,
          "X-WR-TIMEZONE:Asia/Seoul", "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
          "X-PUBLISHED-TTL:PT1H"]
+    if color:
+        L += ["X-APPLE-CALENDAR-COLOR:" + color, "COLOR:" + color]
     for eid, e in events:
         if not e.get("date"):
             continue
