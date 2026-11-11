@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>파워 코치 · 대회주 워크아웃</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#07090d; --panel:rgba(255,255,255,.035); --line:rgba(255,255,255,.08); --text:#eef2f7; --muted:#8b95a7;
+    --blue:#2563eb; --blue2:#3b82f6; --red:#dc2626; --red2:#ef4444; --orange:#ea580c; --orange2:#f97316;
+    --purple:#7c3aed; --green:#22c55e; --gold:#d6b36a;
+    --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans KR",-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;-webkit-font-smoothing:antialiased}
+  body{background:
+    radial-gradient(1200px 600px at 10% -10%,rgba(37,99,235,.18),transparent 60%),
+    radial-gradient(900px 500px at 100% 0%,rgba(124,58,237,.12),transparent 60%),var(--bg)}
+  button,select,input{font-family:inherit}
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  h1{font-size:22px;margin:0;font-weight:900;letter-spacing:-.01em}
+  h1 span{color:var(--gold);font-weight:700;font-size:13px;letter-spacing:.18em;display:block;margin-bottom:4px}
+  .sub{color:var(--muted);font-size:13px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-right:10px}
+  .pill i{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:16px;backdrop-filter:blur(10px);box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .btn{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:11px 16px;font-size:15px;font-weight:600;cursor:pointer;transition:.18s;letter-spacing:-.01em}
+  .btn:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn.primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);border-color:rgba(255,255,255,.15);box-shadow:0 6px 20px rgba(37,99,235,.35)}
+  .btn.ok{background:linear-gradient(135deg,#16a34a,#15803d);border-color:rgba(255,255,255,.15);box-shadow:0 6px 20px rgba(34,197,94,.3)}
+  .btn.warn{background:linear-gradient(135deg,#b91c1c,#7f1d1d);border-color:rgba(255,255,255,.12)}
+  .btn:disabled{opacity:.38;cursor:default;transform:none;box-shadow:none}
+  label.chk{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--muted);cursor:pointer}
+  label.chk input{accent-color:var(--blue2);width:16px;height:16px}
+  select,input[type=number]{background:rgba(0,0,0,.35);color:var(--text);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:15px;font-weight:500}
+  input[type=number]{width:84px;font-family:var(--mono)}
+  .dev{font-size:13px;color:var(--muted);margin-top:10px;display:flex;gap:18px;flex-wrap:wrap}
+  .dev b{color:var(--text);font-weight:600}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#3a4150;margin-right:6px;vertical-align:middle;box-shadow:0 0 0 3px rgba(255,255,255,.04)}
+  .dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(34,197,94,.25),0 0 12px rgba(34,197,94,.6)}
+
+  .main{display:grid;grid-template-columns:1.45fr 1fr;gap:14px;margin-top:14px}
+  @media(max-width:860px){.main{grid-template-columns:1fr}}
+
+  /* 메인 파워 디스플레이 */
+  .power{position:relative;border-radius:26px;padding:22px 20px 18px;text-align:center;min-height:380px;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;
+    background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.07),transparent 60%),linear-gradient(160deg,#1a1f2b,#0d1017);
+    border:1px solid var(--line);transition:background .35s,box-shadow .35s;box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 20px 60px rgba(0,0,0,.5)}
+  .power::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 40%);pointer-events:none}
+  .power.blue{background:radial-gradient(circle at 50% 25%,rgba(255,255,255,.14),transparent 55%),linear-gradient(160deg,#2563eb,#1e3a8a);box-shadow:0 0 0 1px rgba(255,255,255,.12),0 20px 70px rgba(37,99,235,.45)}
+  .power.red{background:radial-gradient(circle at 50% 25%,rgba(255,255,255,.12),transparent 55%),linear-gradient(160deg,#dc2626,#7f1d1d);box-shadow:0 0 0 1px rgba(255,255,255,.12),0 20px 70px rgba(220,38,38,.45)}
+  .power.orange{background:radial-gradient(circle at 50% 25%,rgba(255,255,255,.12),transparent 55%),linear-gradient(160deg,#ea580c,#7c2d12);box-shadow:0 0 0 1px rgba(255,255,255,.12),0 20px 70px rgba(234,88,12,.45)}
+  .power.purple{background:radial-gradient(circle at 50% 25%,rgba(255,255,255,.14),transparent 55%),linear-gradient(160deg,#7c3aed,#4c1d95);box-shadow:0 0 0 1px rgba(255,255,255,.12),0 20px 70px rgba(124,58,237,.5)}
+  .stLabel{font-size:15px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;opacity:.85;padding:6px 14px;border:1px solid rgba(255,255,255,.22);border-radius:999px;background:rgba(0,0,0,.18)}
+  .gauge{position:relative;width:min(360px,84vw);aspect-ratio:1;margin:8px auto 2px}
+  .gauge svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(135deg)}
+  .gauge circle{fill:none;stroke-linecap:round}
+  .gauge .track{stroke:rgba(255,255,255,.14);stroke-width:14}
+  .gauge .band{stroke:rgba(255,255,255,.35);stroke-width:14}
+  .gauge .val{stroke:#fff;stroke-width:14;transition:stroke-dasharray .4s ease;filter:drop-shadow(0 0 8px rgba(255,255,255,.6))}
+  .gauge .center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .watt{font-family:var(--mono);font-size:clamp(64px,14vw,96px);font-weight:800;line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums;text-shadow:0 4px 30px rgba(0,0,0,.35)}
+  .watt small{font-family:"Noto Sans KR";font-size:22px;font-weight:700;opacity:.75;margin-left:4px;letter-spacing:.1em}
+  .vitals{display:flex;gap:18px;margin-top:8px;font-size:16px;opacity:.95}
+  .vitals b{font-family:var(--mono);font-size:30px;font-weight:800;margin:0 3px}
+  .vitals small{font-size:12px;opacity:.75}
+  .target{font-size:21px;font-weight:700;opacity:.95;margin-top:2px}
+  .hint{font-size:19px;font-weight:600;margin-top:6px;opacity:.92}
+
+  .side{display:grid;gap:14px}
+  .seg{font-size:20px;font-weight:800;letter-spacing:-.01em}
+  .big{font-family:var(--mono);font-size:64px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;margin-top:4px}
+  .prog{height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin:12px 0 10px}
+  .prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,#3b82f6,#a78bfa);border-radius:99px;transition:width .5s linear}
+  .row{display:flex;gap:10px}
+  .stat{flex:1;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:16px;padding:12px 10px;text-align:center}
+  .stat .k{font-size:12px;color:var(--muted);letter-spacing:.08em}
+  .stat .v{font-family:var(--mono);font-size:30px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+  .next{font-size:15px;color:var(--muted)}
+  .next b{color:var(--text)}
+  canvas{width:100%;height:190px;display:block;background:rgba(0,0,0,.3);border-radius:18px;border:1px solid var(--line);margin-top:14px}
+  .legend{display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px;flex-wrap:wrap;letter-spacing:.04em}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .sim{display:none;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+  .sim.show{display:flex}
+  .sim input[type=range]{flex:1;accent-color:var(--blue2)}
+  table{width:100%;border-collapse:collapse;font-size:15px}
+  th,td{border-bottom:1px solid var(--line);padding:10px 6px;text-align:center}
+  th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.08em}
+  td b{font-family:var(--mono)}
+  .good{color:#60a5fa;font-weight:800}.bad{color:#f87171;font-weight:800}.high{color:#fb923c;font-weight:800}
+  #summary{display:none;margin-top:14px}
+  .note{font-size:13px;color:var(--muted);line-height:1.7;margin-top:14px;padding:0 4px}
+    background:linear-gradient(180deg,#0b1a33 0%,#13264a 55%,#1b2a3a 56%,#2b3b4e 100%)}
+  .zone{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.18);margin-top:6px}
+  .zone i{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .zbar{display:flex;height:10px;border-radius:99px;overflow:hidden;margin-top:10px;background:rgba(0,0,0,.25);width:min(340px,80vw)}
+  .zbar i{display:block;height:100%;transition:flex .6s}
+  .zlegend{display:flex;gap:10px;font-size:11px;opacity:.8;margin-top:5px;flex-wrap:wrap;justify-content:center}
+  .toast{white-space:pre-line;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(20,24,32,.95);border:1px solid var(--line);padding:11px 18px;border-radius:12px;font-size:15px;display:none;z-index:9;max-width:92vw;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1><span>RACE WEEK</span>파워 코치</h1>
+      <div class="sub" style="margin-top:6px">
+        <span class="pill"><i style="background:#3b82f6"></i>목표 안</span>
+        <span class="pill"><i style="background:#ef4444"></i>파워 모자람</span>
+        <span class="pill"><i style="background:#f97316"></i>너무 높음</span>
+        <span class="pill"><i style="background:#8b5cf6"></i>스프린트</span>
+      </div>
+    </div>
+    <div class="bar">
+      <select id="woSel"></select>
+      <span class="sub">FTP</span><input id="ftp" type="number" value="280" min="100" max="500"><span class="sub">W</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="bar">
+      <button class="btn primary" id="btnPower">🔗 파워미터/트레이너 연결</button>
+      <button class="btn" id="btnHr">❤️ 심박계 연결</button>
+      <label class="chk"><input type="checkbox" id="erg" disabled> 트레이너 ERG 자동 저항</label>
+      <label class="chk"><input type="checkbox" id="simOn"> 테스트 모드(기기 없이)</label>
+      <label class="chk"><input type="checkbox" id="voiceOn" checked> 음성 안내</label>
+    </div>
+    <div class="dev" style="margin-top:8px">
+      <span><span class="dot" id="dP"></span>파워: <b id="nmP">연결 안 됨</b></span> &nbsp;
+      <span><span class="dot" id="dH"></span>심박: <b id="nmH">연결 안 됨</b></span>
+    </div>
+    <div class="sim" id="simBox">
+      <span class="sub">가상 파워</span>
+      <input type="range" id="simW" min="0" max="700" value="150">
+      <b id="simV" style="width:60px">150W</b>
+      <label class="chk"><input type="checkbox" id="simAuto" checked> 목표 따라가기</label>
+    </div>
+  </div>
+
+  <div class="main">
+    <div>
+      <div class="power" id="pbox">
+        <div class="stLabel" id="stLabel">시작 버튼을 누르세요</div>
+        <div class="gauge">
+          <svg viewBox="0 0 200 200">
+            <circle class="track" cx="100" cy="100" r="88" stroke-dasharray="414.7 553"/>
+            <circle class="band" id="gBand" cx="100" cy="100" r="88" stroke-dasharray="0 553" stroke-dashoffset="0"/>
+            <circle class="val" id="gVal" cx="100" cy="100" r="88" stroke-dasharray="0 553"/>
+          </svg>
+          <div class="center">
+            <div class="watt"><span id="wNow">--</span><small>W</small></div>
+            <div class="target" id="tgt">목표 --</div>
+            <div class="vitals"><span>❤️ <b id="hrBig">--</b><small>bpm</small></span><span>⟳ <b id="cadBig">--</b><small>rpm</small></span></div>
+          </div>
+        </div>
+        <div class="hint" id="hint">&nbsp;</div>
+        <div class="zone" id="zoneChip"><i id="zoneDot" style="background:#9aa3ad"></i><span id="zoneTxt">Z1 회복</span></div>
+        <div class="zbar" id="zbar"></div>
+        <div class="zlegend"><span>회색 Z1</span><span style="color:#60a5fa">파랑 Z2</span><span style="color:#4ade80">초록 Z3</span><span style="color:#facc15">노랑 Z4</span><span style="color:#fb923c">주황 Z5</span><span style="color:#f87171">빨강 Z6</span></div>
+      </div>
+      <canvas id="cv" width="1400" height="340"></canvas>
+      <div class="legend">
+        <span><i style="background:#2f81f7"></i>목표</span>
+        <span><i style="background:#f0f6fc"></i>내 파워</span>
+        <span><i style="background:#3fb950"></i>현재 위치</span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <div class="seg" id="segName">-</div>
+        <div class="sub" style="margin-top:4px">이 구간 남은 시간</div>
+        <div class="big" id="segLeft">--:--</div>
+        <div class="prog"><i id="segProg"></i></div>
+        <div class="next" id="next">다음: -</div>
+      </div>
+      <div class="row">
+        <div class="stat"><div class="k">케이던스</div><div class="v" id="cad">--</div></div>
+        <div class="stat"><div class="k">심박</div><div class="v" id="hr">--</div></div>
+      </div>
+      <div class="row">
+        <div class="stat"><div class="k">경과</div><div class="v" id="el">0:00</div></div>
+        <div class="stat"><div class="k">전체</div><div class="v" id="tot">0:00</div></div>
+      </div>
+      <div class="row">
+        <div class="stat"><div class="k">구간 평균</div><div class="v" id="segAvg">--</div></div>
+        <div class="stat"><div class="k">파란불 비율</div><div class="v" id="segOk">--</div></div>
+      </div>
+      <div class="bar">
+        <button class="btn ok" id="btnStart" style="flex:1">▶ 시작</button>
+        <button class="btn" id="btnPause" disabled>⏸ 일시정지</button>
+        <button class="btn" id="btnSkip" disabled>⏭ 다음 구간</button>
+        <button class="btn warn" id="btnStop" disabled>■ 종료</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="summary">
+    <div class="seg" style="margin-bottom:8px">오늘 훈련 결과</div>
+    <table id="sumTbl"></table>
+    <div class="bar" style="margin-top:10px">
+      <button class="btn primary" id="btnTcx">⬇️ 스트라바용 파일 저장 (TCX)</button>
+      <button class="btn" id="btnCopy">📋 결과 복사</button>
+    </div>
+    <div class="sub" id="tcxHelp" style="margin-top:8px;line-height:1.6">아이폰: 저장 후 '파일에 저장' → 사파리에서 strava.com/upload/select 열고 그 파일 선택 · 맥북: 다운로드된 파일을 strava.com/upload/select 에서 올리기</div>
+  </div>
+
+  <div class="note">
+    • 크롬 브라우저(맥북·윈도우·안드로이드)에서 열어야 블루투스가 연결돼요. 아이폰은 기본 브라우저에서 블루투스가 안 되고, 앱스토어의 'Bluefy' 브라우저로 열면 돼요.<br>
+    • 즈위프트를 켜놓은 상태면 파워미터가 즈위프트에 잡혀 있어서 여기서 안 보일 수 있어요. 즈위프트를 끄고 연결하세요.<br>
+    • 'ERG 자동 저항'은 스마트 트레이너로 연결했을 때만 켜져요. 켜면 트레이너가 목표 와트로 저항을 알아서 맞춰요(15초 스프린트 구간에서는 자동으로 풀려요).<br>
+    • 스페이스바 = 일시정지/재개. 파워는 3초 평균으로 판단해요.
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+// ---------- 워크아웃 정의 (FTP 비율) ----------
+// kind: ramp(점점 변화) / steady / int(범위) / rec(상한만) / sprint
+const WORKOUTS = {
+  mon:{name:"월 · VO2 4분×3 (340W)", steps:()=>[
+    {name:"워밍업", kind:"ramp", dur:1200, from:.57, to:.68},
+    ...[1,2,3].flatMap(i=>[
+      {name:`4분 #${i}`, kind:"int", dur:240, lo:1.186, hi:1.243, say:`${i}번째 4분 시작. 340와트로 고르게 미세요.`},
+      ...(i<3?[{name:"회복", kind:"rec", dur:240, t:.50, cap:.57}]:[])
+    ]),
+    {name:"회복", kind:"rec", dur:240, t:.50, cap:.57},
+    {name:"쿨다운", kind:"ramp", dur:720, from:.54, to:.45, capMode:true},
+  ]},
+  wed:{name:"수 · 회복 60분 (170W 이하)", steps:()=>[
+    {name:"워밍업", kind:"ramp", dur:300, from:.45, to:.57, capMode:true},
+    {name:"회복 지속", kind:"rec", dur:3000, t:.58, cap:.61, say:"170와트 넘기지 마세요. 편하게 돌리세요."},
+    {name:"쿨다운", kind:"ramp", dur:300, from:.55, to:.45, capMode:true},
+  ]},
+  thu:{name:"목 · 쉽게 + 2분 340W×2", steps:()=>[
+    {name:"쉽게 (점점 올리기)", kind:"ramp", dur:1200, from:.57, to:.68},
+    {name:"2분 #1", kind:"int", dur:120, lo:1.186, hi:1.243, say:"첫 번째 2분. 340와트. 끝까지 고르게."},
+    {name:"회복", kind:"rec", dur:180, t:.50, cap:.57},
+    {name:"2분 #2", kind:"int", dur:120, lo:1.186, hi:1.243, say:"두 번째 2분. 340와트. 마지막이에요."},
+    {name:"쉽게", kind:"rec", dur:1200, t:.58, cap:.65},
+    {name:"쿨다운", kind:"ramp", dur:300, from:.55, to:.45, capMode:true},
+  ]},
+  fri:{name:"금 · 오프너 (대회 전날)", steps:()=>[
+    {name:"몸 풀기", kind:"ramp", dur:900, from:.57, to:.68},
+    ...[1,2,3].flatMap(i=>[
+      {name:`1분 #${i}`, kind:"int", dur:60, lo:1.23, hi:1.29, say:`${i}번째 1분. 350와트.`},
+      {name:"회복", kind:"rec", dur:180, t:.52, cap:.57},
+    ]),
+    {name:"15초 스프린트 #1", kind:"sprint", dur:15, say:"15초 전력 스프린트!"},
+    {name:"회복", kind:"rec", dur:150, t:.50, cap:.57},
+    {name:"15초 스프린트 #2", kind:"sprint", dur:15, say:"마지막 15초 전력 스프린트!"},
+    {name:"회복", kind:"rec", dur:150, t:.50, cap:.57},
+    {name:"쿨다운", kind:"ramp", dur:300, from:.58, to:.50, capMode:true},
+  ]},
+};
+
+// ---------- 상태 ----------
+const $=id=>document.getElementById(id);
+let steps=[], starts=[], total=0;
+let running=false, paused=false, t=0, timer=null;
+let powerBuf=[], lastPower=0, lastPowerAt=0, cadence=null, hrNow=null;
+let trace=[]; // {t,w,c,h,ts}
+let startTime=null;
+let segStats=[]; // per step {sum,n,ok,low,high}
+let lastSayAt=0, warnSince=null, warnKind=null;
+let ftmsCP=null, ergActive=false, ergReleased=false, lastErgTarget=null;
+let wakeLock=null;
+
+const FTP=()=>Math.max(100,Math.min(500,+$("ftp").value||280));
+function fmt(s){s=Math.max(0,Math.round(s));const m=Math.floor(s/60),x=s%60;return m+":"+String(x).padStart(2,"0")}
+
+// 목표 계산: {mode:'range'|'cap'|'sprint', lo, hi, t}
+function targetAt(i, into){
+  const s=steps[i], F=FTP();
+  if(s.kind==="ramp"){
+    const p=s.from+(s.to-s.from)*(into/s.dur), w=p*F;
+    return s.capMode? {mode:"cap",t:w,hi:w+15} : {mode:"range",t:w,lo:w-15,hi:w+15};
+  }
+  if(s.kind==="int") return {mode:"range",lo:s.lo*F,hi:s.hi*F,t:(s.lo+s.hi)/2*F};
+  if(s.kind==="rec") return {mode:"cap",t:s.t*F,hi:s.cap*F};
+  if(s.kind==="sprint") return {mode:"sprint",t:1.6*F,lo:1.6*F};
+}
+function targetText(tg){
+  const r=v=>Math.round(v);
+  if(tg.mode==="range") return `목표 ${r(tg.lo)}~${r(tg.hi)}W`;
+  if(tg.mode==="cap") return `목표 ${r(tg.t)}W · ${r(tg.hi)}W 이하`;
+  return `전력! (${r(tg.lo)}W 이상)`;
+}
+function judge(w,tg){
+  if(tg.mode==="sprint") return w>=tg.lo?"blue":"red";
+  if(tg.mode==="cap") return w>tg.hi?"orange":"blue";
+  if(w<tg.lo) return "red";
+  if(w>tg.hi) return "orange";
+  return "blue";
+}
+
+function load(){
+  const key=$("woSel").value;
+  steps=WORKOUTS[key].steps();
+  starts=[];total=0;
+  for(const s of steps){starts.push(total);total+=s.dur}
+  segStats=steps.map(()=>({sum:0,n:0,ok:0,low:0,high:0}));
+  trace=[];t=0;
+  $("tot").textContent=fmt(total);$("el").textContent="0:00";
+  $("summary").style.display="none";
+  updateUI();draw();
+}
+function stepIndex(tt){
+  for(let i=steps.length-1;i>=0;i--) if(tt>=starts[i]) return i;
+  return 0;
+}
+
+// ---------- 음성 / 소리 ----------
+let actx=null;
+function beep(freq=880,ms=150){
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=actx.createOscillator(),g=actx.createGain();
+    o.frequency.value=freq;o.connect(g);g.connect(actx.destination);
+    g.gain.setValueAtTime(.25,actx.currentTime);g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+ms/1000);
+    o.start();o.stop(actx.currentTime+ms/1000);
+  }catch(e){}
+}
+function say(text,force){
+  if(!$("voiceOn").checked) return;
+  const now=Date.now();
+  if(!force && now-lastSayAt<6000) return;
+  lastSayAt=now;
+  try{
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text);u.lang="ko-KR";u.rate=1.05;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function toast(m){const el=$("toast");el.textContent=m;el.style.display="block";clearTimeout(el._t);el._t=setTimeout(()=>el.style.display="none",9000)}
+
+// ---------- 파워 입력 ----------
+function pushPower(w){
+  lastPower=w;lastPowerAt=Date.now();
+  powerBuf.push({at:lastPowerAt,w});
+}
+function avg3(){
+  const now=Date.now();
+  powerBuf=powerBuf.filter(p=>now-p.at<=3000);
+  if(!powerBuf.length) return (now-lastPowerAt<4000)?lastPower:0;
+  return powerBuf.reduce((a,b)=>a+b.w,0)/powerBuf.length;
+}
+
+// ---------- 메인 루프 (1초) ----------
+let prevIdx=-1;
+function tick(){
+  if($("simOn").checked) simTick();
+  if(!running||paused){updateUI();return}
+  const idx=stepIndex(t), into=t-starts[idx], s=steps[idx];
+  const tg=targetAt(idx,into);
+  const w=avg3();
+  // 구간 진입
+  if(idx!==prevIdx){
+    prevIdx=idx;
+    const txt=s.say||(s.kind==="rec"?`회복 구간. ${Math.round(tg.t)}와트로 편하게.`:`${s.name}. ${Math.round(tg.t)}와트.`);
+    say(txt,true);
+    warnSince=null;
+  }
+  // 다음 구간 3-2-1
+  const left=s.dur-into;
+  if(left<=3&&left>=1&&idx<steps.length-1){beep(left===1?1200:800,left===1?260:140)}
+  if((s.kind==="int")&&left===60&&s.dur>=180) say("1분 남았어요. 버티세요!",true);
+  if((s.kind==="int")&&left===30&&s.dur<=60) say("30초!",true);
+
+  // 기록
+  trace.push({t,w,c:cadence,h:hrNow,ts:Date.now()});
+  if(w>0) zoneTime[zoneOf(w,FTP())]++;
+  const st=segStats[idx], c=judge(w,tg);
+  if(w>0||s.kind!=="rec"){st.sum+=w;st.n++; if(c==="blue")st.ok++; else if(c==="red")st.low++; else st.high++;}
+
+  // 경고 음성 (5초 지속 시)
+  if(c!=="blue" && w>0){
+    if(warnKind!==c){warnKind=c;warnSince=t}
+    if(t-warnSince>=5){
+      if(c==="red") say(s.kind==="sprint"?"더 세게!":"파워가 모자라요. 올려주세요.");
+      if(c==="orange") say(s.kind==="int"?"조금 높아요. 살짝 낮추세요.":"너무 높아요. 낮추세요.");
+    }
+  }else{warnKind=null;warnSince=null}
+
+  // ERG
+  ergControl(s,tg);
+
+  t++;
+  if(t>=total){finish();return}
+  updateUI();
+}
+
+
+// 게이지: 270도 호, 0 ~ 1.7*FTP
+function gauge(w,tg){
+  const F=FTP(), max=1.7*F, C=553, arc=0.75*C;
+  const frac=v=>Math.max(0,Math.min(1,v/max))*arc;
+  $("gVal").setAttribute("stroke-dasharray",`${frac(w)} ${C}`);
+  let lo=0,hi=0;
+  if(tg.mode==="range"){lo=tg.lo;hi=tg.hi}
+  else if(tg.mode==="cap"){lo=0;hi=tg.hi}
+  else {lo=tg.lo;hi=max}
+  const a=frac(lo),b=frac(hi);
+  $("gBand").setAttribute("stroke-dasharray",`${Math.max(0,b-a)} ${C}`);
+  $("gBand").setAttribute("stroke-dashoffset",`${-a}`);
+}
+// ---------- 파워존 ----------
+const ZONES=[{n:"Z1 회복",c:"#9aa3ad",lo:0},{n:"Z2 지구력",c:"#60a5fa",lo:.60},{n:"Z3 템포",c:"#4ade80",lo:.76},{n:"Z4 역치",c:"#facc15",lo:.90},{n:"Z5 VO2",c:"#fb923c",lo:1.05},{n:"Z6 무산소",c:"#f87171",lo:1.18}];
+let zoneTime=[0,0,0,0,0,0];
+function zoneOf(w,ftp){const r=w/ftp;let z=0;for(let i=0;i<ZONES.length;i++) if(r>=ZONES[i].lo) z=i;return z}
+function zoneUI(w){
+  const z=zoneOf(w,FTP());
+  $("zoneDot").style.background=ZONES[z].c;$("zoneTxt").textContent=ZONES[z].n+" · "+Math.round(w/FTP()*100)+"%";
+  const tot=zoneTime.reduce((a,b)=>a+b,0)||1;
+  $("zbar").innerHTML=ZONES.map((zz,i)=>`<i style="flex:${Math.max(0.02,zoneTime[i]/tot)};background:${zz.c}"></i>`).join("");
+}
+function updateUI(){
+  const w=Math.round(avg3());
+  zoneUI(w);
+  $("wNow").textContent=(Date.now()-lastPowerAt<4000||$("simOn").checked)?w:"--";
+  $("cad").textContent=cadence!=null?Math.round(cadence):"--";
+  $("hr").textContent=hrNow!=null?hrNow:"--";
+  $("hrBig").textContent=hrNow!=null?hrNow:"--";
+  $("cadBig").textContent=cadence!=null?Math.round(cadence):"--";
+  $("el").textContent=fmt(t);
+  const box=$("pbox");
+  if(!steps.length) return;
+  const idx=stepIndex(Math.min(t,total-1)), into=Math.min(t,total-1)-starts[idx], s=steps[idx];
+  const tg=targetAt(idx,into);
+  $("segName").textContent=`${idx+1}/${steps.length} · ${s.name}`;
+  $("segLeft").textContent=fmt(s.dur-into);
+  $("segProg").style.width=(into/s.dur*100)+"%";
+  gauge(w,tg);
+  const n=steps[idx+1];
+  if(n){const nt=targetAt(idx+1,0);$("next").innerHTML=`다음: <b>${n.name}</b> · ${targetText(nt).replace("목표 ","")} · ${fmt(n.dur)}`}
+  else $("next").textContent="다음: 끝!";
+  $("tgt").textContent=targetText(tg);
+  const st=segStats[idx];
+  $("segAvg").textContent=st.n?Math.round(st.sum/st.n):"--";
+  $("segOk").textContent=st.n?Math.round(st.ok/st.n*100)+"%":"--";
+  box.className="power";
+  if(!running){ $("stLabel").textContent=t>=total&&total?"훈련 끝! 수고하셨어요":"시작 버튼을 누르세요"; $("hint").innerHTML="&nbsp;"; draw(); return}
+  if(paused){ $("stLabel").textContent="일시정지"; $("hint").textContent="스페이스바 또는 재개 버튼"; draw(); return}
+  const c=judge(w,tg);
+  const live=(Date.now()-lastPowerAt<4000)||$("simOn").checked;
+  if(!live){$("stLabel").textContent="파워 신호 없음";$("hint").textContent="파워미터를 연결하거나 테스트 모드를 켜세요";draw();return}
+  if(s.kind==="sprint"){box.classList.add(c==="blue"?"purple":"red");$("stLabel").textContent=c==="blue"?"좋아요! 끝까지!":"더 세게!!"}
+  else{
+    box.classList.add(c);
+    $("stLabel").textContent=c==="blue"?"좋아요 · 목표 안":c==="red"?"파워 모자람 ↑":"너무 높음 ↓";
+  }
+  let h="";
+  if(tg.mode==="range"){ if(w<tg.lo)h=`${Math.round(tg.lo-w)}W 더 올리세요`; else if(w>tg.hi)h=`${Math.round(w-tg.hi)}W 낮추세요`; else h="이대로 유지!"}
+  else if(tg.mode==="cap"){ h=w>tg.hi?`${Math.round(w-tg.hi)}W 낮추세요`:"편하게 유지"}
+  else h="전력으로!";
+  $("hint").textContent=h;
+  draw();
+}
+
+// ---------- 그래프 ----------
+function draw(){
+  const cv=$("cv"),g=cv.getContext("2d"),W=cv.width,H=cv.height;
+  g.clearRect(0,0,W,H);
+  if(!total) return;
+  const F=FTP(), maxW=Math.max(1.7*F, ...trace.map(p=>p.w), 400);
+  const X=s=>s/total*W, Y=w=>H-12-(w/maxW)*(H-24);
+  // FTP line
+  g.strokeStyle="#30363d";g.setLineDash([6,6]);g.beginPath();g.moveTo(0,Y(F));g.lineTo(W,Y(F));g.stroke();g.setLineDash([]);
+  g.fillStyle="#6e7681";g.font="22px sans-serif";g.fillText("FTP "+F+"W",8,Y(F)-6);
+  // targets
+  steps.forEach((s,i)=>{
+    const x0=X(starts[i]),x1=X(starts[i]+s.dur);
+    g.fillStyle=s.kind==="int"?"rgba(47,129,247,.55)":s.kind==="sprint"?"rgba(137,87,229,.6)":"rgba(47,129,247,.22)";
+    if(s.kind==="ramp"){
+      const a=targetAt(i,0).t,b=targetAt(i,s.dur).t;
+      g.beginPath();g.moveTo(x0,H-12);g.lineTo(x0,Y(a));g.lineTo(x1,Y(b));g.lineTo(x1,H-12);g.closePath();g.fill();
+    }else{
+      const tg=targetAt(i,0), top=tg.mode==="range"?tg.hi:tg.mode==="sprint"?1.6*F:tg.t;
+      g.fillRect(x0,Y(top),Math.max(1,x1-x0-1),H-12-Y(top));
+    }
+  });
+  // trace
+  if(trace.length>1){
+    g.strokeStyle="#f0f6fc";g.lineWidth=2.5;g.beginPath();
+    trace.forEach((p,k)=>{k?g.lineTo(X(p.t),Y(p.w)):g.moveTo(X(p.t),Y(p.w))});g.stroke();g.lineWidth=1;
+  }
+  // progress
+  g.strokeStyle="#3fb950";g.lineWidth=3;g.beginPath();g.moveTo(X(t),0);g.lineTo(X(t),H);g.stroke();g.lineWidth=1;
+}
+
+// ---------- 시작/정지 ----------
+async function start(){
+  if(running) return;
+  load();
+  running=true;paused=false;prevIdx=-1;t=0;startTime=new Date();zoneTime=[0,0,0,0,0,0];
+  $("btnStart").disabled=true;$("btnPause").disabled=false;$("btnSkip").disabled=false;$("btnStop").disabled=false;
+  $("woSel").disabled=true;$("ftp").disabled=true;
+  beep(660,120);
+  try{wakeLock=await navigator.wakeLock?.request("screen")}catch(e){}
+}
+function pause(){
+  if(!running) return;
+  paused=!paused;
+  $("btnPause").textContent=paused?"▶ 재개":"⏸ 일시정지";
+  if(paused) say("일시정지",true); else say("다시 시작",true);
+  updateUI();
+}
+function skip(){
+  if(!running) return;
+  const idx=stepIndex(t);
+  if(idx<steps.length-1){t=starts[idx+1];} else finish();
+  updateUI();
+}
+function finish(){
+  running=false;paused=false;
+  $("btnStart").disabled=false;$("btnPause").disabled=true;$("btnSkip").disabled=true;$("btnStop").disabled=true;
+  $("btnPause").textContent="⏸ 일시정지";$("woSel").disabled=false;$("ftp").disabled=false;
+  say("훈련 끝! 수고하셨어요.",true);
+  ergRelease();
+  try{wakeLock&&wakeLock.release()}catch(e){}
+  summary();persist();updateUI();
+}
+function summary(){
+  const rows=[`<tr><th>구간</th><th>목표</th><th>평균</th><th>파란불</th><th>모자람</th><th>넘침</th></tr>`];
+  const lines=[`[파워 코치] ${WORKOUTS[$("woSel").value].name} · FTP ${FTP()}W`];
+  steps.forEach((s,i)=>{
+    const st=segStats[i]; if(!st.n) return;
+    const tg=targetAt(i,0), a=Math.round(st.sum/st.n);
+    const ok=Math.round(st.ok/st.n*100), lo=Math.round(st.low/st.n*100), hi=Math.round(st.high/st.n*100);
+    const tt=targetText(tg).replace("목표 ","");
+    rows.push(`<tr><td>${s.name}</td><td>${tt}</td><td><b>${a}W</b></td><td class="good">${ok}%</td><td class="bad">${lo}%</td><td class="high">${hi}%</td></tr>`);
+    lines.push(`${s.name}: 평균 ${a}W (목표 ${tt}) · 파란불 ${ok}%`);
+  });
+  $("sumTbl").innerHTML=rows.join("");
+  $("summary").style.display="block";
+  $("summary")._text=lines.join("\n");
+}
+
+
+// ---------- TCX (스트라바 업로드용) ----------
+function buildTCX(){
+  if(!trace.length||!startTime) return null;
+  const iso=d=>new Date(d).toISOString().replace(/\.\d{3}Z$/,"Z");
+  const t0=startTime.getTime();
+  let pts="", calories=0, sumW=0, maxW=0, hrs=[];
+  for(const p of trace){
+    const ts=p.ts||(t0+p.t*1000), w=Math.round(p.w||0);
+    sumW+=w; if(w>maxW)maxW=w; if(p.h)hrs.push(p.h);
+    pts+=`<Trackpoint><Time>${iso(ts)}</Time>`;
+    if(p.h) pts+=`<HeartRateBpm><Value>${Math.round(p.h)}</Value></HeartRateBpm>`;
+    if(p.c!=null) pts+=`<Cadence>${Math.max(0,Math.min(254,Math.round(p.c)))}</Cadence>`;
+    pts+=`<Extensions><ns3:TPX><ns3:Watts>${w}</ns3:Watts></ns3:TPX></Extensions></Trackpoint>`;
+  }
+  const dur=trace.length, avgW=Math.round(sumW/dur);
+  calories=Math.round(sumW/1000*1.0); // kJ ≈ kcal
+  const name=WORKOUTS[$("woSel").value].name+" · 파워 코치";
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
+<Activities><Activity Sport="Biking"><Id>${iso(t0)}</Id>
+<Lap StartTime="${iso(t0)}"><TotalTimeSeconds>${dur}</TotalTimeSeconds><DistanceMeters>0</DistanceMeters><MaximumSpeed>0</MaximumSpeed><Calories>${calories}</Calories>`+
+(hrs.length?`<AverageHeartRateBpm><Value>${Math.round(hrs.reduce((a,b)=>a+b,0)/hrs.length)}</Value></AverageHeartRateBpm><MaximumHeartRateBpm><Value>${Math.max(...hrs)}</Value></MaximumHeartRateBpm>`:"")+
+`<Intensity>Active</Intensity><TriggerMethod>Manual</TriggerMethod><Track>${pts}</Track>
+<Extensions><ns3:LX><ns3:AvgWatts>${avgW}</ns3:AvgWatts><ns3:MaxWatts>${maxW}</ns3:MaxWatts></ns3:LX></Extensions></Lap>
+<Notes>${name.replace(/[<&]/g,"")}</Notes>
+<Creator xsi:type="Device_t" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><Name>Power Coach</Name><UnitId>0</UnitId><ProductID>0</ProductID><Version><VersionMajor>1</VersionMajor><VersionMinor>0</VersionMinor></Version></Creator>
+</Activity></Activities></TrainingCenterDatabase>`;
+}
+async function saveTCX(){
+  const xml=buildTCX(); if(!xml){toast("저장할 기록이 없어요");return}
+  const d=startTime, pad=n=>String(n).padStart(2,"0");
+  const fname=`PowerCoach_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.tcx`;
+  const blob=new Blob([xml],{type:"application/vnd.garmin.tcx+xml"});
+  const file=new File([blob],fname,{type:"application/vnd.garmin.tcx+xml"});
+  try{
+    if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:fname});return}
+  }catch(e){ if(e&&e.name==="AbortError") return; }
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+  toast("다운로드했어요: "+fname);
+}
+// 새로고침 대비: 마지막 기록 보관
+function persist(){try{localStorage.setItem("pc_last",JSON.stringify({wo:$("woSel").value,ftp:FTP(),start:startTime&&startTime.getTime(),trace,segStats,steps}))}catch(e){}}
+function restoreLast(){
+  try{
+    const j=JSON.parse(localStorage.getItem("pc_last")||"null"); if(!j||!j.trace||!j.trace.length) return;
+    const r=document.createElement("div");r.className="card";r.style.marginTop="12px";
+    r.innerHTML=`<div class="bar"><span class="sub">저장 안 한 지난 기록이 있어요 (${new Date(j.start).toLocaleString("ko-KR")})</span><button class="btn" id="btnLast">⬇️ 그 기록 TCX 저장</button><button class="btn" id="btnLastDel">지우기</button></div>`;
+    $("summary").parentNode.insertBefore(r,$("summary"));
+    $("btnLast").onclick=()=>{ $("woSel").value=j.wo;$("ftp").value=j.ftp;steps=j.steps;starts=[];total=0;for(const st of steps){starts.push(total);total+=st.dur}
+      trace=j.trace;segStats=j.segStats;startTime=new Date(j.start);saveTCX(); };
+    $("btnLastDel").onclick=()=>{localStorage.removeItem("pc_last");r.remove()};
+  }catch(e){}
+}
+
+// ---------- 테스트 모드 ----------
+function simTick(){
+  let w=+$("simW").value;
+  if($("simAuto").checked&&running&&!paused&&steps.length){
+    const idx=stepIndex(t),tg=targetAt(idx,t-starts[idx]);
+    const base=tg.mode==="sprint"?tg.lo*1.15:tg.t;
+    w=Math.max(0,base+(Math.random()-.5)*40+(Math.sin(t/7)*15));
+    $("simW").value=Math.round(w);
+  }
+  $("simV").textContent=Math.round(w)+"W";
+  pushPower(w);
+  cadence=w>0?88+Math.random()*6:0;
+}
+
+// ---------- 블루투스 ----------
+const U=h=>`0000${h}-0000-1000-8000-00805f9b34fb`;
+const CP_SVC=U("1818"), CP_MEAS=U("2a63"), FTMS_SVC=U("1826"), FTMS_BIKE=U("2ad2"), FTMS_CP=U("2ad9"), HR_SVC=U("180d"), HR_MEAS=U("2a37");
+let lastCrank=null;
+async function connectPower(){
+  if(!navigator.bluetooth){toast("이 브라우저는 블루투스를 지원하지 않아요. 크롬(맥북/윈도우) 또는 아이폰은 Bluefy 앱으로 여세요.");return}
+  let dev=null;
+  try{
+    try{
+      dev=await navigator.bluetooth.requestDevice({filters:[{services:[CP_SVC]},{services:[FTMS_SVC]}],optionalServices:[CP_SVC,FTMS_SVC]});
+    }catch(e1){
+      if(e1&&e1.name==="NotFoundError"){toast("기기를 못 찾았어요. 페달을 돌려 파워미터를 깨운 뒤 다시 눌러보세요.");return}
+      // 일부 브라우저는 필터 방식을 못 써요 → 모든 기기 보여주기
+      dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[CP_SVC,FTMS_SVC]});
+    }
+    dev.addEventListener("gattserverdisconnected",()=>{$("dP").classList.remove("on");$("nmP").textContent="연결 끊김";$("erg").disabled=true;ftmsCP=null;say("파워미터 연결이 끊겼어요",true)});
+    const srv=await dev.gatt.connect();
+    let usedFtms=false;
+    try{
+      const fs=await srv.getPrimaryService(FTMS_SVC);
+      const bike=await fs.getCharacteristic(FTMS_BIKE);
+      bike.addEventListener("characteristicvaluechanged",e=>parseFtms(e.target.value));
+      await bike.startNotifications();
+      usedFtms=true;
+      try{ftmsCP=await fs.getCharacteristic(FTMS_CP);await ftmsCP.startNotifications();$("erg").disabled=false}catch(e){ftmsCP=null}
+    }catch(e){}
+    if(!usedFtms){
+      const ps=await srv.getPrimaryService(CP_SVC);
+      const m=await ps.getCharacteristic(CP_MEAS);
+      m.addEventListener("characteristicvaluechanged",e=>parseCP(e.target.value));
+      await m.startNotifications();
+    }
+    $("dP").classList.add("on");$("nmP").textContent=(dev.name||"기기")+(usedFtms?" (트레이너)":" (파워미터)");
+    $("simOn").checked=false;$("simBox").classList.remove("show");
+    toast("연결됐어요: "+(dev.name||"기기"));
+  }catch(e){
+    if(e&&e.name==="NotFoundError"){toast("기기를 못 찾았어요. 페달을 돌려 파워미터를 깨운 뒤 다시 눌러보세요.");return}
+    const n=(e&&e.name)||"", msg=(e&&e.message)||String(e);
+    let why="연결 실패";
+    if(n==="NotAllowedError"||n==="SecurityError") why="블루투스 권한이 없어요. 아이폰 설정 → Bluefy → Bluetooth 켜기";
+    else if(/not supported|unsupported/i.test(msg)) why="이 브라우저가 이 연결 방식을 지원하지 않아요";
+    else if(dev) why="기기는 찾았는데 파워 신호를 못 받았어요. 다른 앱(즈위프트 등)을 끄고 다시 시도";
+    if(msg==="2"||msg==="3"||msg==="4") why="아이폰 블루투스 권한/상태 문제예요. 설정 → Bluefy → Bluetooth 켜기, 아이폰 블루투스 켜기 확인";
+    toast(why+"\n["+n+"] "+msg);
+    const el=$("toast");clearTimeout(el._t);el._t=setTimeout(()=>el.style.display="none",12000);
+  }
+}
+function parseCP(v){
+  const flags=v.getUint16(0,true);
+  const w=v.getInt16(2,true);
+  let o=4;
+  if(flags&0x01)o+=1;      // pedal power balance
+  if(flags&0x04)o+=2;      // accumulated torque
+  if(flags&0x10)o+=6;      // wheel rev
+  if(flags&0x20){          // crank rev
+    const revs=v.getUint16(o,true), tm=v.getUint16(o+2,true);
+    if(lastCrank){
+      let dr=(revs-lastCrank.revs+65536)%65536, dt=((tm-lastCrank.tm+65536)%65536)/1024;
+      if(dt>0&&dr<10) cadence=dr/dt*60; else if(dt===0&&Date.now()-lastCrank.at>2500) cadence=0;
+    }
+    if(!lastCrank||revs!==lastCrank.revs) lastCrank={revs,tm,at:Date.now()};
+  }
+  pushPower(Math.max(0,w));
+}
+function parseFtms(v){
+  const f=v.getUint16(0,true); let o=2;
+  if(!(f&0x01))o+=2;                       // inst speed
+  if(f&0x02)o+=2;                          // avg speed
+  if(f&0x04){cadence=v.getUint16(o,true)/2;o+=2}
+  if(f&0x08)o+=2;                          // avg cadence
+  if(f&0x10)o+=3;                          // distance
+  if(f&0x20)o+=2;                          // resistance
+  if(f&0x40){pushPower(Math.max(0,v.getInt16(o,true)));o+=2}
+}
+async function cpWrite(bytes){try{await ftmsCP.writeValueWithResponse?ftmsCP.writeValueWithResponse(new Uint8Array(bytes)):ftmsCP.writeValue(new Uint8Array(bytes))}catch(e){}}
+async function ergControl(s,tg){
+  if(!ftmsCP||!$("erg").checked){if(ergActive)ergRelease();return}
+  if(s.kind==="sprint"){ if(!ergReleased){await cpWrite([0x01]);ergReleased=true;ergActive=false;lastErgTarget=null} return}
+  if(!ergActive){await cpWrite([0x00]);await cpWrite([0x07]);ergActive=true;ergReleased=false}
+  const target=Math.round(tg.t);
+  if(target!==lastErgTarget){lastErgTarget=target;await cpWrite([0x05,target&255,(target>>8)&255])}
+}
+async function ergRelease(){if(ftmsCP&&ergActive){await cpWrite([0x01])}ergActive=false;lastErgTarget=null}
+
+async function connectHr(){
+  if(!navigator.bluetooth){toast("이 브라우저는 블루투스를 지원하지 않아요.");return}
+  try{
+    let dev;
+    try{dev=await navigator.bluetooth.requestDevice({filters:[{services:[HR_SVC]}]})}
+    catch(e1){if(e1&&e1.name==="NotFoundError")return; dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[HR_SVC]})}
+    const srv=await dev.gatt.connect();
+    const c=await (await srv.getPrimaryService(HR_SVC)).getCharacteristic(HR_MEAS);
+    c.addEventListener("characteristicvaluechanged",e=>{const v=e.target.value,f=v.getUint8(0);hrNow=(f&1)?v.getUint16(1,true):v.getUint8(1)});
+    await c.startNotifications();
+    dev.addEventListener("gattserverdisconnected",()=>{$("dH").classList.remove("on");$("nmH").textContent="연결 끊김";hrNow=null});
+    $("dH").classList.add("on");$("nmH").textContent=dev.name||"심박계";
+  }catch(e){if(e&&e.name!=="NotFoundError")toast("심박계 연결 실패")}
+}
+
+
+// ---------- 초기화 ----------
+for(const [k,v] of Object.entries(WORKOUTS)){const o=document.createElement("option");o.value=k;o.textContent=v.name;$("woSel").appendChild(o)}
+try{const d=new Date().getDay();$("woSel").value={1:"mon",3:"wed",4:"thu",5:"fri"}[d]||"mon"}catch(e){}
+$("woSel").onchange=load; $("ftp").onchange=load;
+$("btnPower").onclick=connectPower; $("btnHr").onclick=connectHr;
+$("btnStart").onclick=()=>{say("훈련을 시작합니다",true);start()};
+$("btnPause").onclick=pause; $("btnSkip").onclick=skip; $("btnStop").onclick=()=>{if(running)finish()};
+$("simOn").onchange=()=>$("simBox").classList.toggle("show",$("simOn").checked);
+$("simW").oninput=()=>{$("simAuto").checked=false;$("simV").textContent=$("simW").value+"W"};
+$("btnTcx").onclick=saveTCX;
+restoreLast();
+$("btnCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("summary")._text||"");toast("복사했어요")}catch(e){toast("복사가 안 돼요")}};
+document.addEventListener("keydown",e=>{if(e.code==="Space"&&e.target.tagName!=="INPUT"){e.preventDefault();pause()}});
+load();
+timer=setInterval(tick,1000);
+</script>
+
+</body>
+</html>
