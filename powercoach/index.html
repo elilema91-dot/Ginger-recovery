@@ -313,28 +313,62 @@ const G={
 };
 function pkg(F, list){const o={};list.forEach(([k,w])=>o[k]=w);return o}
 
-// ---------- 회원별 프로그램 ----------
-// 박은영: 8주 FTP 상승 커리큘럼 (12/3~1/27). 주차 FTP는 기본값이고 FTP 칸에서 바꿀 수 있어요.
-function parkWeek(n,F,note){
-  let list;
-  if(n===1) list=[["mon",G.sweet(2,10,F)],["thu",G.vo2(2,4,1.20,F)],["home",G.z2(45,F)]];
-  else if(n===2) list=[["mon",G.sweet(2,12,F)],["thu",G.vo2(2,4,1.20,F)],["home",G.z2(45,F)]];
-  else if(n===3) list=[["mon",G.sweet(3,10,F)],["thu",G.vo2(3,4,1.20,F)],["home",G.z2(50,F)]];
-  else if(n===4) list=[["mon",G.test(F)],["thu",G.rec(40,F)],["home",G.z2(40,F)]];
-  else if(n===5) list=[["mon",G.sweet(2,15,F)],["thu",G.vo2(2,5,1.15,F)],["home",G.z2(50,F)]];
-  else if(n===6) list=[["mon",G.sweet(3,12,F)],["thu",G.vo2(3,5,1.15,F)],["home",G.z2(60,F)]];
-  else if(n===7) list=[["mon",G.thr(2,8,F)],["thu",G.vo2(3,4,1.20,F)],["home",G.z2(60,F)]];
-  else list=[["mon",G.test(F)],["thu",G.rec(40,F)],["home",G.z2(40,F)]];
-  const o=pkg(F,list);
-  for(const k of Object.keys(o)) o[k].name=(k==="mon"?"월 · ":k==="thu"?"목 · ":"집 · ")+o[k].name;
-  return {label:`${n}주차 · FTP ${F}${note?" · "+note:""}`, ftp:F, workouts:o};
+// 추가 생성기: 템포 / 저케이던스 / 케이던스 드릴
+G.tempo=(n,min,F)=>({name:`템포 ${n}×${min}분 (${W(F,.76)}~${W(F,.85)}W)`, steps:()=>[
+  {name:"워밍업", kind:"ramp", dur:600, from:.50, to:.65},
+  ...Array.from({length:n},(_,i)=>i+1).flatMap(i=>[
+    {name:`템포 #${i}`, kind:"int", dur:min*60, lo:.76, hi:.85, say:`${i}번째 ${min}분 템포. 조금 힘들지만 오래 갈 수 있는 강도.`},
+    ...(i<n?[{name:"회복", kind:"rec", dur:300, t:.52, cap:.60}]:[])
+  ]),
+  {name:"쿨다운", kind:"ramp", dur:360, from:.55, to:.45, capMode:true},
+]});
+G.lowcad=(n,min,lo,hi,F)=>({name:`저케이던스 ${n}×${min}분 · 70~75rpm (${W(F,lo)}~${W(F,hi)}W)`, steps:()=>[
+  {name:"워밍업", kind:"ramp", dur:600, from:.50, to:.65},
+  ...Array.from({length:n},(_,i)=>i+1).flatMap(i=>[
+    {name:`저케이던스 #${i}`, kind:"int", dur:min*60, lo, hi, say:`${i}번째 ${min}분. 기어 무겁게, 케이던스 70에서 75. 업힐처럼. 무릎 아프면 85로 올리세요.`},
+    ...(i<n?[{name:"회복 · 케이던스 95", kind:"rec", dur:300, t:.52, cap:.60}]:[])
+  ]),
+  {name:"쿨다운", kind:"ramp", dur:360, from:.55, to:.45, capMode:true},
+]});
+G.cad=(F)=>({name:`케이던스 드릴 50분 (${W(F,.55)}~${W(F,.68)}W · 100rpm↔85rpm)`, steps:()=>[
+  {name:"워밍업", kind:"ramp", dur:600, from:.45, to:.60, capMode:true},
+  ...[1,2,3,4,5,6].flatMap(i=>[
+    {name:`100rpm #${i}`, kind:"int", dur:120, lo:.55, hi:.68, say:`케이던스 100. 상체 고정, 엉덩이 튀지 않게.`},
+    {name:`85rpm #${i}`, kind:"int", dur:120, lo:.55, hi:.68, say:`케이던스 85로 내리고 같은 파워.`},
+  ]),
+  {name:"쿨다운", kind:"ramp", dur:600, from:.58, to:.45, capMode:true},
+]});
+
+// ---------- 회원별 프로그램 (12주 · 11/17~2/8) ----------
+// 각 주: [FTP, 핵심1, 핵심2, 존2]  — 함수는 (F)=>워크아웃
+const z2=m=>F=>G.z2(m,F), rec=m=>F=>G.rec(m,F), test=F=>G.test(F), cad=F=>G.cad(F);
+const sw=(n,m)=>F=>G.sweet(n,m,F), vo=(n,m,p)=>F=>G.vo2(n,m,p,F), th=(n,m)=>F=>G.thr(n,m,F), tp=(n,m)=>F=>G.tempo(n,m,F);
+const lc=(n,m)=>F=>G.lowcad(n,m,.80,.88,F), lcs=(n,m)=>F=>G.lowcad(n,m,.88,.94,F), lct=(n,m)=>F=>G.lowcad(n,m,.95,1.02,F);
+function mkProgram(name, rows, notes){
+  return {name, start:new Date(2026,10,17), weeks: rows.map((r,i)=>{
+    const F=r[0], w={};
+    [["a","핵심1 · "],["b","핵심2 · "],["c","존2 · "]].forEach(([k,pre],j)=>{const wo=r[j+1](F); wo.name=pre+wo.name; w[k]=wo});
+    const ph=i<4?"기초":i<8?"빌드":"피크";
+    return {label:`${i+1}주차 · FTP ${F} · ${ph}${notes&&notes[i]?" · "+notes[i]:""}`, ftp:F, workouts:w};
+  })};
 }
 const PROGRAMS={
   me:{name:"생강차 (나)", weeks:[{label:"대회 주", ftp:280, workouts:ME_WORKOUTS}]},
-  park:{name:"박은영", weeks:[
-    parkWeek(1,175,"12/3~"), parkWeek(2,180), parkWeek(3,185), parkWeek(4,185,"테스트 주"),
-    parkWeek(5,190,"테스트값으로 수정"), parkWeek(6,195), parkWeek(7,200), parkWeek(8,200,"테스트 주"),
-  ]},
+  park: mkProgram("박은영",[
+    [175, z2(45), cad, z2(60)], [175, z2(50), lc(2,8), z2(60)], [180, tp(2,10), lc(3,8), z2(60)], [180, z2(40), test, z2(40)],
+    [185, sw(2,10), lc(3,8), z2(60)], [185, sw(2,12), vo(2,4,1.20), z2(60)], [190, sw(3,10), vo(3,4,1.20), z2(70)], [190, z2(40), rec(40), z2(50)],
+    [195, th(2,8), sw(2,15), z2(70)], [195, th(2,10), vo(2,5,1.15), z2(70)], [200, th(3,8), vo(3,5,1.15), z2(60)], [200, z2(40), test, rec(40)],
+  ],{3:"테스트",4:"테스트값으로 수정",7:"회복 주",11:"테스트"}),
+  jung: mkProgram("정연욱",[
+    [220, z2(60), lc(2,8), z2(75)], [220, lc(3,8), cad, z2(75)], [225, tp(2,12), lc(3,10), z2(90)], [225, z2(45), test, z2(45)],
+    [230, sw(2,12), lcs(3,8), z2(90)], [230, sw(3,10), vo(3,4,1.18), z2(90)], [235, sw(2,15), lcs(3,10), z2(90)], [235, z2(45), rec(40), z2(60)],
+    [240, th(2,10), vo(4,4,1.18), z2(90)], [240, th(3,8), lct(2,8), z2(90)], [245, th(2,12), vo(3,5,1.15), z2(75)], [245, z2(45), test, rec(40)],
+  ],{3:"테스트",4:"테스트값으로 수정",7:"회복 주",11:"테스트"}),
+  kang: mkProgram("강승연",[
+    [155, test, z2(45), z2(60)], [155, cad, z2(50), z2(75)], [155, tp(2,8), lc(2,6), z2(90)], [155, z2(45), rec(40), z2(60)],
+    [160, tp(2,12), lc(3,6), z2(90)], [160, sw(2,10), lc(3,8), z2(90)], [165, sw(2,12), tp(3,10), z2(100)], [165, z2(45), rec(40), z2(60)],
+    [170, sw(3,10), lcs(3,8), z2(100)], [170, th(2,8), sw(2,15), z2(90)], [175, th(2,10), vo(3,3,1.10), z2(75)], [175, z2(45), test, rec(40)],
+  ],{0:"테스트",1:"테스트값으로 수정",3:"회복 주",7:"회복 주",11:"테스트"}),
 };
 let WORKOUTS=ME_WORKOUTS;
 
@@ -801,7 +835,7 @@ function setMember(keepWo){
   if(multi&&!keepWo){
     fillSel($("wkSel"),p.weeks.map((w,i)=>[String(i),w.label]));
     // 12/3 시작 기준 현재 주차 자동 선택
-    try{const d0=new Date(2026,11,3), n=Math.floor((Date.now()-d0)/(7*864e5)); $("wkSel").value=String(Math.max(0,Math.min(p.weeks.length-1,n)))}catch(e){}
+    try{const d0=p.start||new Date(2026,11,3), n=Math.floor((Date.now()-d0)/(7*864e5)); $("wkSel").value=String(Math.max(0,Math.min(p.weeks.length-1,n)))}catch(e){}
   }
   setWeek(keepWo);
 }
@@ -810,7 +844,7 @@ function setWeek(keepWo){
   const prev=$("woSel").value;
   fillSel($("woSel"),Object.entries(WORKOUTS).map(([k,v])=>[k,v.name]));
   if(keepWo&&WORKOUTS[prev]) $("woSel").value=prev;
-  else { try{const d=new Date().getDay();const want={1:"mon",3:"wed",4:"thu",5:"fri"}[d];$("woSel").value=WORKOUTS[want]?want:Object.keys(WORKOUTS)[0]}catch(e){} }
+  else { try{const d=new Date().getDay();const want={1:"mon",3:"wed",4:"thu",5:"fri"}[d]||{2:"a",6:"b",0:"c"}[d];$("woSel").value=WORKOUTS[want]?want:Object.keys(WORKOUTS)[0]}catch(e){} }
   $("ftp").value=w.ftp;
   $("memTag").textContent=curProg().name.replace(/ \(.*\)/,"")+(curProg().weeks.length>1?" · "+w.label.split(" · ")[0]:"");
   load();
