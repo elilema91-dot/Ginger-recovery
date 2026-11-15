@@ -109,7 +109,7 @@
 <div class="wrap">
   <header>
     <div>
-      <h1><span>RACE WEEK</span>파워 코치</h1>
+      <h1><span id="memTag">생강차</span>파워 코치</h1>
       <div class="sub" style="margin-top:6px">
         <span class="pill"><i style="background:#3b82f6"></i>목표 안</span>
         <span class="pill"><i style="background:#ef4444"></i>파워 모자람</span>
@@ -118,6 +118,8 @@
       </div>
     </div>
     <div class="bar">
+      <select id="memSel"></select>
+      <select id="wkSel" style="display:none"></select>
       <select id="woSel"></select>
       <span class="sub">FTP</span><input id="ftp" type="number" value="280" min="100" max="500"><span class="sub">W</span>
     </div>
@@ -223,7 +225,7 @@
 "use strict";
 // ---------- 워크아웃 정의 (FTP 비율) ----------
 // kind: ramp(점점 변화) / steady / int(범위) / rec(상한만) / sprint
-const WORKOUTS = {
+const ME_WORKOUTS = {
   mon:{name:"월 · VO2 4분×3 (340W)", steps:()=>[
     {name:"워밍업", kind:"ramp", dur:1200, from:.57, to:.68},
     ...[1,2,3].flatMap(i=>[
@@ -259,6 +261,82 @@ const WORKOUTS = {
     {name:"쿨다운", kind:"ramp", dur:300, from:.58, to:.50, capMode:true},
   ]},
 };
+
+// ---------- 워크아웃 생성기 (회원 커리큘럼용) ----------
+const W=(F,p)=>Math.round(F*p);
+const G={
+  sweet:(n,min,F)=>({name:`스윗스팟 ${n}×${min}분 (${W(F,.88)}~${W(F,.94)}W)`, steps:()=>[
+    {name:"워밍업", kind:"ramp", dur:600, from:.50, to:.68},
+    ...Array.from({length:n},(_,i)=>i+1).flatMap(i=>[
+      {name:`스윗스팟 #${i}`, kind:"int", dur:min*60, lo:.88, hi:.94, say:`${i}번째 ${min}분. 케이던스 85에서 90. 숨은 차지만 말은 되는 정도.`},
+      ...(i<n?[{name:"회복", kind:"rec", dur:300, t:.52, cap:.60}]:[])
+    ]),
+    {name:"쿨다운", kind:"ramp", dur:360, from:.55, to:.45, capMode:true},
+  ]}),
+  vo2:(n,min,pct,F)=>({name:`VO2 ${min}분×${n} (${W(F,pct)}W)`, steps:()=>[
+    {name:"워밍업", kind:"ramp", dur:900, from:.50, to:.68},
+    ...Array.from({length:n},(_,i)=>i+1).flatMap(i=>[
+      {name:`${min}분 #${i}`, kind:"int", dur:min*60, lo:pct-.03, hi:pct+.03, say:`${i}번째 ${min}분 시작. ${W(F,pct)}와트. 심박 185 넘으면 멈추세요.`},
+      ...(i<n?[{name:"회복", kind:"rec", dur:300, t:.50, cap:.57}]:[])
+    ]),
+    {name:"회복", kind:"rec", dur:300, t:.50, cap:.57},
+    {name:"쿨다운", kind:"ramp", dur:480, from:.54, to:.45, capMode:true},
+  ]}),
+  thr:(n,min,F)=>({name:`역치 ${n}×${min}분 (${W(F,.97)}~${W(F,1.03)}W)`, steps:()=>[
+    {name:"워밍업", kind:"ramp", dur:720, from:.50, to:.70},
+    ...Array.from({length:n},(_,i)=>i+1).flatMap(i=>[
+      {name:`역치 #${i}`, kind:"int", dur:min*60, lo:.97, hi:1.03, say:`${i}번째 ${min}분. FTP 그대로. 고르게.`},
+      ...(i<n?[{name:"회복", kind:"rec", dur:300, t:.52, cap:.60}]:[])
+    ]),
+    {name:"쿨다운", kind:"ramp", dur:480, from:.55, to:.45, capMode:true},
+  ]}),
+  z2:(min,F)=>({name:`존2 ${min}분 (${W(F,.60)}~${W(F,.75)}W · 심박 130 이하)`, steps:()=>[
+    {name:"워밍업", kind:"ramp", dur:300, from:.45, to:.60, capMode:true},
+    {name:"존2 지속", kind:"int", dur:(min-10)*60, lo:.60, hi:.75, say:"존2. 심박 130 넘으면 파워 내리세요. 대화 되는 강도."},
+    {name:"쿨다운", kind:"ramp", dur:300, from:.58, to:.45, capMode:true},
+  ]}),
+  rec:(min,F)=>({name:`회복 ${min}분 (${W(F,.60)}W 이하)`, steps:()=>[
+    {name:"워밍업", kind:"ramp", dur:300, from:.40, to:.52, capMode:true},
+    {name:"회복 지속", kind:"rec", dur:(min-10)*60, t:.52, cap:.60, say:"아주 편하게. 다리 풀기만."},
+    {name:"쿨다운", kind:"ramp", dur:300, from:.50, to:.40, capMode:true},
+  ]}),
+  test:(F)=>({name:`20분 FTP 테스트 (${W(F,.95)}W 이상 전력)`, steps:()=>[
+    {name:"워밍업", kind:"ramp", dur:900, from:.50, to:.70},
+    ...[1,2,3].flatMap(i=>[
+      {name:`1분 열기 #${i}`, kind:"int", dur:60, lo:.97, hi:1.08, say:`1분 열기 ${i}번째.`},
+      {name:"회복", kind:"rec", dur:60, t:.52, cap:.60},
+    ]),
+    {name:"준비", kind:"rec", dur:300, t:.52, cap:.60, say:"5분 뒤 20분 테스트. 처음 5분은 조금 아껴서."},
+    {name:"20분 전력", kind:"int", dur:1200, lo:.95, hi:1.40, say:"20분 시작. 처음 5분은 아끼고, 마지막 5분에 다 쏟으세요. 평균 파워의 95퍼센트가 새 FTP예요."},
+    {name:"쿨다운", kind:"ramp", dur:600, from:.55, to:.42, capMode:true},
+  ]}),
+};
+function pkg(F, list){const o={};list.forEach(([k,w])=>o[k]=w);return o}
+
+// ---------- 회원별 프로그램 ----------
+// 박은영: 8주 FTP 상승 커리큘럼 (12/3~1/27). 주차 FTP는 기본값이고 FTP 칸에서 바꿀 수 있어요.
+function parkWeek(n,F,note){
+  let list;
+  if(n===1) list=[["mon",G.sweet(2,10,F)],["thu",G.vo2(2,4,1.20,F)],["home",G.z2(45,F)]];
+  else if(n===2) list=[["mon",G.sweet(2,12,F)],["thu",G.vo2(2,4,1.20,F)],["home",G.z2(45,F)]];
+  else if(n===3) list=[["mon",G.sweet(3,10,F)],["thu",G.vo2(3,4,1.20,F)],["home",G.z2(50,F)]];
+  else if(n===4) list=[["mon",G.test(F)],["thu",G.rec(40,F)],["home",G.z2(40,F)]];
+  else if(n===5) list=[["mon",G.sweet(2,15,F)],["thu",G.vo2(2,5,1.15,F)],["home",G.z2(50,F)]];
+  else if(n===6) list=[["mon",G.sweet(3,12,F)],["thu",G.vo2(3,5,1.15,F)],["home",G.z2(60,F)]];
+  else if(n===7) list=[["mon",G.thr(2,8,F)],["thu",G.vo2(3,4,1.20,F)],["home",G.z2(60,F)]];
+  else list=[["mon",G.test(F)],["thu",G.rec(40,F)],["home",G.z2(40,F)]];
+  const o=pkg(F,list);
+  for(const k of Object.keys(o)) o[k].name=(k==="mon"?"월 · ":k==="thu"?"목 · ":"집 · ")+o[k].name;
+  return {label:`${n}주차 · FTP ${F}${note?" · "+note:""}`, ftp:F, workouts:o};
+}
+const PROGRAMS={
+  me:{name:"생강차 (나)", weeks:[{label:"대회 주", ftp:280, workouts:ME_WORKOUTS}]},
+  park:{name:"박은영", weeks:[
+    parkWeek(1,175,"12/3~"), parkWeek(2,180), parkWeek(3,185), parkWeek(4,185,"테스트 주"),
+    parkWeek(5,190,"테스트값으로 수정"), parkWeek(6,195), parkWeek(7,200), parkWeek(8,200,"테스트 주"),
+  ]},
+};
+let WORKOUTS=ME_WORKOUTS;
 
 // ---------- 상태 ----------
 const $=id=>document.getElementById(id);
@@ -500,7 +578,7 @@ async function start(){
   load();
   running=true;paused=false;prevIdx=-1;t=0;startTime=new Date();zoneTime=[0,0,0,0,0,0];
   $("btnStart").disabled=true;$("btnPause").disabled=false;$("btnSkip").disabled=false;$("btnStop").disabled=false;
-  $("woSel").disabled=true;$("ftp").disabled=true;
+  $("woSel").disabled=true;$("ftp").disabled=true;$("memSel").disabled=true;$("wkSel").disabled=true;
   beep(660,120);
   try{wakeLock=await navigator.wakeLock?.request("screen")}catch(e){}
 }
@@ -520,7 +598,7 @@ function skip(){
 function finish(){
   running=false;paused=false;
   $("btnStart").disabled=false;$("btnPause").disabled=true;$("btnSkip").disabled=true;$("btnStop").disabled=true;
-  $("btnPause").textContent="⏸ 일시정지";$("woSel").disabled=false;$("ftp").disabled=false;
+  $("btnPause").textContent="⏸ 일시정지";$("woSel").disabled=false;$("ftp").disabled=false;$("memSel").disabled=false;$("wkSel").disabled=false;
   say("훈련 끝! 수고하셨어요.",true);
   ergRelease();
   try{wakeLock&&wakeLock.release()}catch(e){}
@@ -528,7 +606,7 @@ function finish(){
 }
 function summary(){
   const rows=[`<tr><th>구간</th><th>목표</th><th>평균</th><th>파란불</th><th>모자람</th><th>넘침</th></tr>`];
-  const lines=[`[파워 코치] ${WORKOUTS[$("woSel").value].name} · FTP ${FTP()}W`];
+  const lines=[`[파워 코치] ${curProg().name} · ${WORKOUTS[$("woSel").value].name} · FTP ${FTP()}W`];
   steps.forEach((s,i)=>{
     const st=segStats[i]; if(!st.n) return;
     const tg=targetAt(i,0), a=Math.round(st.sum/st.n);
@@ -559,7 +637,7 @@ function buildTCX(){
   }
   const dur=trace.length, avgW=Math.round(sumW/dur);
   calories=Math.round(sumW/1000*1.0); // kJ ≈ kcal
-  const name=WORKOUTS[$("woSel").value].name+" · 파워 코치";
+  const name=curProg().name.replace(/ \(.*\)/,"")+" · "+WORKOUTS[$("woSel").value].name+" · 파워 코치";
   return `<?xml version="1.0" encoding="UTF-8"?>
 <TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:ns3="http://www.garmin.com/xmlschemas/ActivityExtension/v2">
 <Activities><Activity Sport="Biking"><Id>${iso(t0)}</Id>
@@ -574,7 +652,8 @@ function buildTCX(){
 async function saveTCX(){
   const xml=buildTCX(); if(!xml){toast("저장할 기록이 없어요");return}
   const d=startTime, pad=n=>String(n).padStart(2,"0");
-  const fname=`PowerCoach_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.tcx`;
+  const who=$("memSel").value==="me"?"":"_"+curProg().name.replace(/ \(.*\)/,"");
+  const fname=`PowerCoach${who}_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.tcx`;
   const blob=new Blob([xml],{type:"application/vnd.garmin.tcx+xml"});
   const file=new File([blob],fname,{type:"application/vnd.garmin.tcx+xml"});
   try{
@@ -585,14 +664,14 @@ async function saveTCX(){
   toast("다운로드했어요: "+fname);
 }
 // 새로고침 대비: 마지막 기록 보관
-function persist(){try{localStorage.setItem("pc_last",JSON.stringify({wo:$("woSel").value,ftp:FTP(),start:startTime&&startTime.getTime(),trace,segStats,steps}))}catch(e){}}
+function persist(){try{localStorage.setItem("pc_last",JSON.stringify({mem:$("memSel").value,wk:$("wkSel").value,wo:$("woSel").value,ftp:FTP(),start:startTime&&startTime.getTime(),trace,segStats,steps}))}catch(e){}}
 function restoreLast(){
   try{
     const j=JSON.parse(localStorage.getItem("pc_last")||"null"); if(!j||!j.trace||!j.trace.length) return;
     const r=document.createElement("div");r.className="card";r.style.marginTop="12px";
     r.innerHTML=`<div class="bar"><span class="sub">저장 안 한 지난 기록이 있어요 (${new Date(j.start).toLocaleString("ko-KR")})</span><button class="btn" id="btnLast">⬇️ 그 기록 TCX 저장</button><button class="btn" id="btnLastDel">지우기</button></div>`;
     $("summary").parentNode.insertBefore(r,$("summary"));
-    $("btnLast").onclick=()=>{ $("woSel").value=j.wo;$("ftp").value=j.ftp;steps=j.steps;starts=[];total=0;for(const st of steps){starts.push(total);total+=st.dur}
+    $("btnLast").onclick=()=>{ if(j.mem){$("memSel").value=j.mem;setMember();if(j.wk){$("wkSel").value=j.wk;setWeek()}} $("woSel").value=j.wo;$("ftp").value=j.ftp;steps=j.steps;starts=[];total=0;for(const st of steps){starts.push(total);total+=st.dur}
       trace=j.trace;segStats=j.segStats;startTime=new Date(j.start);saveTCX(); };
     $("btnLastDel").onclick=()=>{localStorage.removeItem("pc_last");r.remove()};
   }catch(e){}
@@ -713,19 +792,44 @@ async function connectHr(){
 
 
 // ---------- 초기화 ----------
-for(const [k,v] of Object.entries(WORKOUTS)){const o=document.createElement("option");o.value=k;o.textContent=v.name;$("woSel").appendChild(o)}
-try{const d=new Date().getDay();$("woSel").value={1:"mon",3:"wed",4:"thu",5:"fri"}[d]||"mon"}catch(e){}
+function fillSel(sel,items){sel.innerHTML="";items.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;o.textContent=label;sel.appendChild(o)})}
+function curProg(){return PROGRAMS[$("memSel").value]||PROGRAMS.me}
+function curWeek(){const p=curProg();return p.weeks[Math.min(+$("wkSel").value||0,p.weeks.length-1)]}
+function setMember(keepWo){
+  const p=curProg(), multi=p.weeks.length>1;
+  $("wkSel").style.display=multi?"":"none";
+  if(multi&&!keepWo){
+    fillSel($("wkSel"),p.weeks.map((w,i)=>[String(i),w.label]));
+    // 12/3 시작 기준 현재 주차 자동 선택
+    try{const d0=new Date(2026,11,3), n=Math.floor((Date.now()-d0)/(7*864e5)); $("wkSel").value=String(Math.max(0,Math.min(p.weeks.length-1,n)))}catch(e){}
+  }
+  setWeek(keepWo);
+}
+function setWeek(keepWo){
+  const w=curWeek(); WORKOUTS=w.workouts;
+  const prev=$("woSel").value;
+  fillSel($("woSel"),Object.entries(WORKOUTS).map(([k,v])=>[k,v.name]));
+  if(keepWo&&WORKOUTS[prev]) $("woSel").value=prev;
+  else { try{const d=new Date().getDay();const want={1:"mon",3:"wed",4:"thu",5:"fri"}[d];$("woSel").value=WORKOUTS[want]?want:Object.keys(WORKOUTS)[0]}catch(e){} }
+  $("ftp").value=w.ftp;
+  $("memTag").textContent=curProg().name.replace(/ \(.*\)/,"")+(curProg().weeks.length>1?" · "+w.label.split(" · ")[0]:"");
+  load();
+}
+fillSel($("memSel"),Object.entries(PROGRAMS).map(([k,v])=>[k,v.name]));
+try{$("memSel").value=localStorage.getItem("pc_mem")||"me"}catch(e){}
+$("memSel").onchange=()=>{try{localStorage.setItem("pc_mem",$("memSel").value)}catch(e){};setMember()};
+$("wkSel").onchange=()=>setWeek();
 $("woSel").onchange=load; $("ftp").onchange=load;
+setMember();
 $("btnPower").onclick=connectPower; $("btnHr").onclick=connectHr;
 $("btnStart").onclick=()=>{say("훈련을 시작합니다",true);start()};
 $("btnPause").onclick=pause; $("btnSkip").onclick=skip; $("btnStop").onclick=()=>{if(running)finish()};
 $("simOn").onchange=()=>$("simBox").classList.toggle("show",$("simOn").checked);
 $("simW").oninput=()=>{$("simAuto").checked=false;$("simV").textContent=$("simW").value+"W"};
 $("btnTcx").onclick=saveTCX;
-restoreLast();
 $("btnCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("summary")._text||"");toast("복사했어요")}catch(e){toast("복사가 안 돼요")}};
 document.addEventListener("keydown",e=>{if(e.code==="Space"&&e.target.tagName!=="INPUT"){e.preventDefault();pause()}});
-load();
+restoreLast();
 timer=setInterval(tick,1000);
 </script>
 
