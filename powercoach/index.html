@@ -103,6 +103,100 @@
   .zbar i{display:block;height:100%;transition:flex .6s}
   .zlegend{display:flex;gap:10px;font-size:11px;opacity:.8;margin-top:5px;flex-wrap:wrap;justify-content:center}
   .toast{white-space:pre-line;position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(20,24,32,.95);border:1px solid var(--line);padding:11px 18px;border-radius:12px;font-size:15px;display:none;z-index:9;max-width:92vw;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+
+  /* ---- 모바일 컴팩트 ---- */
+  details.note summary{cursor:pointer;color:var(--text);font-weight:600}
+  @media(max-width:860px){
+    .wrap{padding:10px 10px 96px}
+    header{margin-bottom:8px;gap:8px;align-items:center}
+    header .sub{display:none}
+    h1{font-size:17px;display:flex;align-items:baseline;gap:8px}
+    h1 span{display:inline;font-size:11px;margin:0}
+    header .bar{width:100%;gap:6px;flex-wrap:nowrap}
+    header select{flex:1;min-width:0;padding:7px 8px;font-size:13px}
+    #woSel{flex:2.2}
+    header input[type=number]{width:60px;padding:7px 6px;font-size:13px}
+    header .sub{display:none}
+    .card{padding:10px;border-radius:14px}
+    .card .bar{gap:6px}
+    .card .btn{padding:8px 10px;font-size:13px;flex:1;white-space:nowrap}
+    label.chk{font-size:12px}
+    .dev{margin-top:6px;font-size:12px;gap:12px}
+    .main{margin-top:8px;gap:8px}
+    .power{min-height:0;padding:10px 10px 8px;border-radius:18px}
+    .stLabel{font-size:11px;padding:3px 10px}
+    .gauge{width:min(230px,58vw);margin:2px auto 0}
+    .watt{font-size:clamp(44px,12vw,60px)}
+    .watt small{font-size:14px}
+    .target{font-size:14px}
+    .vitals{gap:12px;font-size:12px;margin-top:2px}
+    .vitals b{font-size:20px}
+    .hint{font-size:14px;margin-top:2px;min-height:0}
+    .zbar{height:7px;margin-top:6px}
+    .zlegend{display:none}
+    canvas{height:110px;margin-top:8px;border-radius:12px}
+    .legend{display:none}
+    .side{gap:8px}
+    .side .card .seg{font-size:15px}
+    .side .card .sub{display:none}
+    .big{font-size:36px;margin-top:0}
+    .prog{margin:6px 0}
+    .next{font-size:13px}
+    .row{gap:6px}
+    .stat{padding:6px 6px;border-radius:10px}
+    .stat .k{font-size:10px}
+    .stat .v{font-size:18px}
+    .ctl{position:fixed;left:0;right:0;bottom:0;z-index:20;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(7,9,13,.9);backdrop-filter:blur(14px);border-top:1px solid var(--line);flex-wrap:nowrap}
+    .ctl .btn{padding:12px 8px;font-size:14px}
+    .ctl #btnStart{flex:2}
+    .note{font-size:12px}
+  }
+
+  /* ---- 태블릿 가로 · 한 화면 ---- */
+  @media(min-width:861px) and (max-height:1000px){
+    .wrap{max-width:none;padding:8px 12px 10px;height:100vh;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+    header{margin:0;align-items:center;flex-wrap:nowrap}
+    header .sub{display:none}
+    h1{font-size:18px;display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+    h1 span{display:inline;font-size:12px;margin:0}
+    header .bar{flex:1;justify-content:flex-end;flex-wrap:nowrap;gap:8px}
+    header select{padding:7px 10px;font-size:14px;max-width:34vw}
+    header input[type=number]{width:70px;padding:7px 8px;font-size:14px}
+    .wrap>.card{padding:8px 12px;border-radius:14px}
+    .wrap>.card .bar{flex-wrap:nowrap;gap:8px}
+    .wrap>.card .btn{padding:7px 12px;font-size:13px;white-space:nowrap}
+    label.chk{font-size:12px;white-space:nowrap}
+    .dev{margin-top:4px;font-size:12px}
+    .main{flex:1;min-height:0;margin:0;grid-template-columns:1fr 1.1fr;gap:10px}
+    .main>div:first-child{display:flex;flex-direction:column;min-height:0}
+    .power{flex:1;min-height:0;padding:10px 14px 8px;border-radius:20px;justify-content:space-evenly}
+    .stLabel{font-size:12px;padding:3px 12px}
+    .gauge{width:min(40vh,340px);margin:0 auto}
+    .watt{font-size:clamp(56px,11vh,100px)}
+    .watt small{font-size:20px}
+    .target{font-size:clamp(16px,2.6vh,24px)}
+    .vitals{gap:26px;font-size:18px;margin-top:4px}
+    .vitals b{font-size:clamp(34px,6vh,54px)}
+    .vitals small{font-size:14px}
+    .hint{font-size:clamp(15px,2.4vh,20px);margin-top:2px}
+    .zbar{height:8px;margin-top:6px}
+    .zlegend{display:none}
+    canvas{height:clamp(90px,14vh,150px);margin-top:8px;flex:none}
+    .legend{display:none}
+    .side{gap:10px;grid-template-rows:auto auto auto auto auto;align-content:start}
+    .side .card{padding:12px 14px}
+    .seg{font-size:18px}
+    .side .card .sub{display:none}
+    .big{font-size:clamp(48px,9vh,80px)}
+    .prog{margin:8px 0 6px}
+    .next{font-size:14px}
+    .stat{padding:8px}
+    .stat .k{font-size:11px}
+    .stat .v{font-size:clamp(30px,5.5vh,50px)}
+    .ctl .btn{padding:12px 10px;font-size:15px}
+    .note{display:none}
+    #summary{position:fixed;inset:10% 8%;overflow:auto;z-index:30;background:rgba(10,13,20,.97)}
+  }
 </style>
 </head>
 <body>
@@ -182,8 +276,8 @@
         <div class="next" id="next">다음: -</div>
       </div>
       <div class="row">
-        <div class="stat"><div class="k">케이던스</div><div class="v" id="cad">--</div></div>
-        <div class="stat"><div class="k">심박</div><div class="v" id="hr">--</div></div>
+        <div class="stat"><div class="k">NP (노멀라이즈드)</div><div class="v" id="np">--</div></div>
+        <div class="stat"><div class="k">평균 파워 (전체)</div><div class="v" id="avgAll">--</div></div>
       </div>
       <div class="row">
         <div class="stat"><div class="k">경과</div><div class="v" id="el">0:00</div></div>
@@ -193,7 +287,7 @@
         <div class="stat"><div class="k">구간 평균</div><div class="v" id="segAvg">--</div></div>
         <div class="stat"><div class="k">파란불 비율</div><div class="v" id="segOk">--</div></div>
       </div>
-      <div class="bar">
+      <div class="bar ctl">
         <button class="btn ok" id="btnStart" style="flex:1">▶ 시작</button>
         <button class="btn" id="btnPause" disabled>⏸ 일시정지</button>
         <button class="btn" id="btnSkip" disabled>⏭ 다음 구간</button>
@@ -212,12 +306,12 @@
     <div class="sub" id="tcxHelp" style="margin-top:8px;line-height:1.6">아이폰: 저장 후 '파일에 저장' → 사파리에서 strava.com/upload/select 열고 그 파일 선택 · 맥북: 다운로드된 파일을 strava.com/upload/select 에서 올리기</div>
   </div>
 
-  <div class="note">
+  <details class="note"><summary>사용 안내</summary>
     • 크롬 브라우저(맥북·윈도우·안드로이드)에서 열어야 블루투스가 연결돼요. 아이폰은 기본 브라우저에서 블루투스가 안 되고, 앱스토어의 'Bluefy' 브라우저로 열면 돼요.<br>
     • 즈위프트를 켜놓은 상태면 파워미터가 즈위프트에 잡혀 있어서 여기서 안 보일 수 있어요. 즈위프트를 끄고 연결하세요.<br>
     • 'ERG 자동 저항'은 스마트 트레이너로 연결했을 때만 켜져요. 켜면 트레이너가 목표 와트로 저항을 알아서 맞춰요(15초 스프린트 구간에서는 자동으로 풀려요).<br>
     • 스페이스바 = 일시정지/재개. 파워는 3초 평균으로 판단해요.
-  </div>
+  </details>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -418,7 +512,7 @@ function load(){
   starts=[];total=0;
   for(const s of steps){starts.push(total);total+=s.dur}
   segStats=steps.map(()=>({sum:0,n:0,ok:0,low:0,high:0}));
-  trace=[];t=0;
+  trace=[];t=0;_npSum4=0;_npN=0;_npWin=[];_npWinSum=0;_npLast=0;
   $("tot").textContent=fmt(total);$("el").textContent="0:00";
   $("summary").style.display="none";
   updateUI();draw();
@@ -466,6 +560,17 @@ function avg3(){
 
 // ---------- 메인 루프 (1초) ----------
 let prevIdx=-1;
+// NP: 30초 이동평균의 4제곱 평균 → 4제곱근
+let _npSum4=0,_npN=0,_npWin=[],_npWinSum=0,_npLast=0;
+function calcNP(){
+  for(let i=_npLast;i<trace.length;i++){
+    const w=trace[i].w||0; _npWin.push(w); _npWinSum+=w; if(_npWin.length>30) _npWinSum-=_npWin.shift();
+    if(_npWin.length>=30){const m=_npWinSum/30; _npSum4+=m*m*m*m; _npN++}
+  }
+  _npLast=trace.length;
+  if(!trace.length){_npSum4=0;_npN=0;_npWin=[];_npWinSum=0;_npLast=0;return 0}
+  return _npN?Math.round(Math.pow(_npSum4/_npN,.25)):0;
+}
 function tick(){
   if($("simOn").checked) simTick();
   if(!running||paused){updateUI();return}
@@ -536,8 +641,8 @@ function updateUI(){
   const w=Math.round(avg3());
   zoneUI(w);
   $("wNow").textContent=(Date.now()-lastPowerAt<4000||$("simOn").checked)?w:"--";
-  $("cad").textContent=cadence!=null?Math.round(cadence):"--";
-  $("hr").textContent=hrNow!=null?hrNow:"--";
+  $("np").textContent=calcNP()||"--";
+  $("avgAll").textContent=trace.length?Math.round(trace.reduce((a,p)=>a+(p.w||0),0)/trace.length):"--";
   $("hrBig").textContent=hrNow!=null?hrNow:"--";
   $("cadBig").textContent=cadence!=null?Math.round(cadence):"--";
   $("el").textContent=fmt(t);
