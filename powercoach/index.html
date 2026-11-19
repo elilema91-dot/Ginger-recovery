@@ -1352,7 +1352,7 @@ function setWeek(keepWo){
 async function loadCourse(key){
   try{localStorage.setItem("pc_course",key)}catch(e){}
   if(!key){World.setCourse(null);return}
-  try{const r=await fetch("courses/"+key+".json");if(!r.ok)throw 0;World.setCourse(await r.json());toast("코스 불러옴: "+World.course.name+" · "+(World.course.length/1000).toFixed(1)+"km")}
+  try{const r=await fetch("courses/"+key+".json?v=20261119b");if(!r.ok)throw 0;World.setCourse(await r.json());toast("코스 불러옴: "+World.course.name+" · "+(World.course.length/1000).toFixed(1)+"km")}
   catch(e){toast("코스를 못 불러왔어요");$("courseSel").value="";World.setCourse(null);return}
   loadScenery(key);
 }
