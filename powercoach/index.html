@@ -1136,7 +1136,8 @@ const World=(()=>{
     // 페달 멈춤 판단: 파워 신호가 2.5초 끊기거나, 케이던스가 0이면 파워 0으로 봄 (트레이너 플라이휠이 도는 걸 파워로 착각하지 않게)
     const fresh=typeof lastPowerAt==="number"&&Date.now()-lastPowerAt<2500;
     let P=live&&fresh?(typeof avg3==="function"?avg3():0):0;
-    const cadKnown=typeof cadence==="number"&&fresh;if(cadKnown&&cadence<5)P=0;if(P<12)P=0;
+    if(typeof cadence==="number"&&cadence>20)frame._cadSeen=true;   // 케이던스를 실제로 보내는 기기일 때만 케이던스 0을 멈춤으로 봄 (케이던스를 0으로만 보내는 트레이너 대비)
+    const cadKnown=frame._cadSeen&&typeof cadence==="number"&&fresh;if(cadKnown&&cadence<5)P=0;if(P<12)P=0;
     solveV(P,dt);
     if(P===0&&v>0){const brake=grade>-.03?0.9:0.35;v=Math.max(0,v-brake*dt)}   // 실내 느낌: 평지·오르막에선 몇 초 안에 멈춤, 내리막은 천천히
     if(live||v>0){const ya=raw(dist)[1];dist+=v*dt;const yb=raw(dist)[1];if(yb>ya&&yb-ya<5)climbed+=yb-ya}
