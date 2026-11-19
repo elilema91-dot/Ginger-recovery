@@ -458,9 +458,9 @@ const G={
     ]),
     {name:"쿨다운", kind:"ramp", dur:480, from:.55, to:.45, capMode:true},
   ]}),
-  z2:(min,F)=>({name:`존2 ${min}분 (${W(F,.60)}~${W(F,.75)}W · 심박 130 이하)`, steps:()=>[
+  z2:(min,F,hr=130)=>({name:`존2 ${min}분 (${W(F,.60)}~${W(F,.75)}W · 심박 ${hr} 이하)`, steps:()=>[
     {name:"워밍업", kind:"ramp", dur:300, from:.45, to:.60, capMode:true},
-    {name:"존2 지속", kind:"int", dur:(min-10)*60, lo:.60, hi:.75, say:"존2. 심박 130 넘으면 파워 내리세요. 대화 되는 강도."},
+    {name:"존2 지속", kind:"int", dur:(min-10)*60, lo:.60, hi:.75, say:`존2. 심박 ${hr} 넘으면 파워 내리세요. 대화 되는 강도.`+(min>=90?" 1시간마다 보급하세요.":"")},
     {name:"쿨다운", kind:"ramp", dur:300, from:.58, to:.45, capMode:true},
   ]}),
   rec:(min,F)=>({name:`회복 ${min}분 (${W(F,.60)}W 이하)`, steps:()=>[
@@ -507,6 +507,72 @@ G.cad=(F)=>({name:`케이던스 드릴 50분 (${W(F,.55)}~${W(F,.68)}W · 100rpm
   {name:"쿨다운", kind:"ramp", dur:600, from:.58, to:.45, capMode:true},
 ]});
 
+// 오버언더: 2분 95% ↔ 1분 105% 반복
+G.ou=(n,min,F)=>({name:`오버언더 ${n}×${min}분 (2분 ${W(F,.95)}W ↔ 1분 ${W(F,1.05)}W)`, steps:()=>[
+  {name:"워밍업", kind:"ramp", dur:900, from:.50, to:.72},
+  ...Array.from({length:n},(_,i)=>i+1).flatMap(i=>[
+    ...Array.from({length:Math.round(min/3)},(_,k)=>[
+      {name:`오버언더 #${i} · 언더`, kind:"int", dur:120, lo:.93, hi:.97, say:k?undefined:`${i}번째 오버언더 시작. 2분 언더, 1분 오버.`},
+      {name:`오버언더 #${i} · 오버`, kind:"int", dur:60, lo:1.03, hi:1.08, say:"오버! 1분."}]).flat(),
+    ...(i<n?[{name:"회복", kind:"rec", dur:300, t:.52, cap:.60}]:[])
+  ]),
+  {name:"쿨다운", kind:"ramp", dur:600, from:.55, to:.45, capMode:true},
+]});
+// 존2 + 15초 스프린트
+G.z2spr=(min,ns,F,hr=145)=>({name:`존2 ${min}분 + 15초 스프린트×${ns}`, steps:()=>{
+  const body=(min-10)*60,gap=Math.floor(body/(ns+1)),out=[{name:"워밍업", kind:"ramp", dur:300, from:.45, to:.62, capMode:true}];
+  for(let k=0;k<ns;k++){out.push({name:"존2", kind:"int", dur:gap-15, lo:.60, hi:.75, say:k?undefined:`존2. 심박 ${hr} 이하. 중간중간 스프린트 나와요.`});out.push({name:`스프린트 #${k+1}`, kind:"sprint", dur:15, say:"15초 전력 스프린트!"})}
+  out.push({name:"존2", kind:"int", dur:body-ns*gap, lo:.60, hi:.75});out.push({name:"쿨다운", kind:"ramp", dur:300, from:.58, to:.45, capMode:true});return out}});
+G.rest=()=>({name:"휴식 (쉬는 날 · 타고 싶으면 회복 30분)", steps:()=>[{name:"가볍게 돌리기", kind:"rec", dur:1800, t:.5, cap:.58, say:"쉬는 날이에요. 아주 가볍게만."}]});
+
+// ---------- 생강차 100일 프로그램 (11/20~2/27 · FTP 280 → 300) ----------
+function myProgram(){
+  const HR=145, start=new Date(2026,10,20), DAYS=["일","월","화","수","목","금","토"];
+  // 주별: [단계, FTP, 화(인터벌A), 수(존2 분), 목(인터벌B), 토(롱 존2 분), 일]
+  const z=m=>F=>G.z2(m,F,HR), rs=m=>F=>G.rec(m,F), sp=(m,n)=>F=>G.z2spr(m,n,F,HR);
+  const W=[
+    ["기초",280, F=>G.tempo(2,10,F),        75, F=>G.lowcad(3,6,.80,.88,F),  120, sp(90,4)],
+    ["기초",280, F=>G.tempo(2,15,F),        75, F=>G.sweet(2,10,F),          150, sp(90,5)],
+    ["기초",280, F=>G.sweet(2,15,F),        90, F=>G.lowcad(3,10,.80,.88,F), 180, sp(120,6)],
+    ["회복",280, z(60),                      45, F=>G.cad(F),                  120, F=>G.test(F)],
+    ["기초2",285,F=>G.sweet(3,12,F),        90, F=>G.thr(2,10,F),            180, sp(120,6)],
+    ["기초2",285,F=>G.sweet(2,20,F),        90, F=>G.thr(3,10,F),            210, sp(120,6)],
+    ["기초2",290,F=>G.sweet(3,15,F),        90, F=>G.thr(2,15,F),            210, sp(120,6)],
+    ["회복",290, z(60),                      45, F=>G.cad(F),                  120, F=>G.test(F)],
+    ["빌드",290, F=>G.thr(3,12,F),          90, F=>G.vo2(5,3,1.20,F),        180, sp(120,6)],
+    ["빌드",295, F=>G.thr(2,20,F),          90, F=>G.vo2(4,4,1.18,F),        210, sp(120,6)],
+    ["빌드",295, F=>G.ou(3,9,F),            90, F=>G.vo2(5,4,1.18,F),        180, sp(120,6)],
+    ["회복",295, z(60),                      45, F=>G.cad(F),                  120, F=>G.test(F)],
+    ["피크",300, F=>G.thr(3,15,F),          90, F=>G.vo2(4,5,1.15,F),        180, sp(90,6)],
+    ["피크",300, F=>G.ou(4,9,F),            75, F=>G.vo2(5,4,1.20,F),        150, sp(90,4)],
+    ["마무리",300, z(60),                    45, F=>G.vo2(3,1,1.20,F),        60,  F=>G.test(F)],
+  ];
+  const weeks=[];
+  for(let wk=0;wk<W.length;wk++){
+    const [ph,F,iA,wedMin,iB,longMin,sun]=W[wk],rec=ph==="회복",o={};
+    for(let d=0;d<7;d++){
+      const n=wk*7+d;if(n>=100)break;
+      const dt=new Date(start.getTime()+n*864e5),dow=dt.getDay(),key="d"+dt.getFullYear()+"-"+(dt.getMonth()+1)+"-"+dt.getDate();
+      let wo;
+      if(n===97)wo=G.vo2(3,1,1.20,F);             // 98일째: 오프너 (1분×3)
+      else if(n===98)wo=G.rest();                 // 99일째: 휴식
+      else if(n===99)wo=G.test(F);                // 100일째: 20분 FTP 테스트 (목표 300W → 20분 평균 316W)
+      else if(rec){wo=[G.rec(40,F),G.z2(90,F,HR),G.rec(60,F),G.rest(),G.cad(F),G.rec(45,F),G.test(F)][[2,3,4,5,6,0,1][dow]]}   // 회복 주: 금·토·일·월·화·수 가볍게 → 목요일 테스트
+      else if(dow===1||dow===5)wo=G.rest();
+      else if(dow===2)wo=iA(F);
+      else if(dow===3)wo=rec?G.rec(wedMin,F):G.z2(wedMin,F,HR);
+      else if(dow===4)wo=iB(F);
+      else if(dow===6)wo=G.z2(longMin,F,HR);
+      else wo=sun(F);
+      wo.name=`${dt.getMonth()+1}/${dt.getDate()} ${DAYS[dow]} · D${n+1} · `+wo.name;
+      o[key]=wo;
+    }
+    const a=new Date(start.getTime()+wk*7*864e5),b=new Date(start.getTime()+Math.min(wk*7+6,99)*864e5);
+    weeks.push({label:`${wk+1}주차 · FTP ${F} · ${ph} (${a.getMonth()+1}/${a.getDate()}~${b.getMonth()+1}/${b.getDate()})`,ftp:F,workouts:o});
+  }
+  return {name:"생강차 (나)",kg:61,start,weeks};
+}
+
 // ---------- 회원별 프로그램 (12주 · 11/17~2/8) ----------
 // 각 주: [FTP, 핵심1, 핵심2, 존2]  — 함수는 (F)=>워크아웃
 const z2=m=>F=>G.z2(m,F), rec=m=>F=>G.rec(m,F), test=F=>G.test(F), cad=F=>G.cad(F);
@@ -521,7 +587,7 @@ function mkProgram(name, rows, notes, kg){
   })};
 }
 const PROGRAMS={
-  me:{name:"생강차 (나)", kg:61, weeks:[{label:"대회 주", ftp:280, workouts:ME_WORKOUTS}]},
+  me:myProgram(),
   park: mkProgram("박은영",[
     [175, z2(45), cad, z2(60)], [175, z2(50), lc(2,8), z2(60)], [180, tp(2,10), lc(3,8), z2(60)], [180, z2(40), test, z2(40)],
     [185, sw(2,10), lc(3,8), z2(60)], [185, sw(2,12), vo(2,4,1.20), z2(60)], [190, sw(3,10), vo(3,4,1.20), z2(70)], [190, z2(40), rec(40), z2(50)],
@@ -565,14 +631,17 @@ function targetAt(i, into){
   if(s.kind==="int") return {mode:"range",lo:s.lo*F,hi:s.hi*F,t:(s.lo+s.hi)/2*F};
   if(s.kind==="rec") return {mode:"cap",t:s.t*F,hi:s.cap*F};
   if(s.kind==="sprint") return {mode:"sprint",t:1.6*F,lo:1.6*F};
+  return {mode:"free",t:0,lo:0,hi:1e9};
 }
 function targetText(tg){
   const r=v=>Math.round(v);
   if(tg.mode==="range") return `목표 ${r(tg.lo)}~${r(tg.hi)}W`;
   if(tg.mode==="cap") return `목표 ${r(tg.t)}W · ${r(tg.hi)}W 이하`;
+  if(tg.mode==="free") return "자유 라이딩 · 목표 없음";
   return `전력! (${r(tg.lo)}W 이상)`;
 }
 function judge(w,tg){
+  if(tg.mode==="free") return "blue";
   if(tg.mode==="sprint") return w>=tg.lo?"blue":"red";
   if(tg.mode==="cap") return w>tg.hi?"orange":"blue";
   if(w<tg.lo) return "red";
@@ -661,7 +730,7 @@ function tick(){
   }
   // 다음 구간 3-2-1
   const left=s.dur-into;
-  if(left<=3&&left>=1&&idx<steps.length-1){beep(left===1?1200:800,left===1?260:140)}
+  if(s.kind!=="free"&&left<=3&&left>=1&&idx<steps.length-1){beep(left===1?1200:800,left===1?260:140)}
   if((s.kind==="int")&&left===60&&s.dur>=180) say("1분 남았어요. 버티세요!",true);
   if((s.kind==="int")&&left===30&&s.dur<=60) say("30초!",true);
 
@@ -672,7 +741,7 @@ function tick(){
   if(w>0||s.kind!=="rec"){st.sum+=w;st.n++; if(c==="blue")st.ok++; else if(c==="red")st.low++; else st.high++;}
 
   // 경고 음성 (5초 지속 시)
-  if(c!=="blue" && w>0){
+  if(s.kind!=="free"&&c!=="blue" && w>0){
     if(warnKind!==c){warnKind=c;warnSince=t}
     if(t-warnSince>=5){
       if(c==="red") say(s.kind==="sprint"?"더 세게!":"파워가 모자라요. 올려주세요.");
@@ -697,6 +766,7 @@ function gauge(w,tg){
   let lo=0,hi=0;
   if(tg.mode==="range"){lo=tg.lo;hi=tg.hi}
   else if(tg.mode==="cap"){lo=0;hi=tg.hi}
+  else if(tg.mode==="free"){lo=0;hi=0}
   else {lo=tg.lo;hi=max}
   const a=frac(lo),b=frac(hi);
   $("gBand").setAttribute("stroke-dasharray",`${Math.max(0,b-a)} ${C}`);
@@ -727,12 +797,12 @@ function updateUI(){
   const idx=stepIndex(Math.min(t,total-1)), into=Math.min(t,total-1)-starts[idx], s=steps[idx];
   const tg=targetAt(idx,into);
   $("segName").textContent=`${idx+1}/${steps.length} · ${s.name}`;
-  $("segLeft").textContent=fmt(s.dur-into);
+  $("segLeft").textContent=s.kind==="free"?fmt(t):fmt(s.dur-into);
   $("segProg").style.width=(into/s.dur*100)+"%";
   gauge(w,tg);
   const n=steps[idx+1];
   if(n){const nt=targetAt(idx+1,0);$("next").innerHTML=`다음: <b>${n.name}</b> · ${targetText(nt).replace("목표 ","")} · ${fmt(n.dur)}`}
-  else $("next").textContent="다음: 끝!";
+  else $("next").textContent=s.kind==="free"?"끝내려면 ■ 종료":"다음: 끝!";
   $("tgt").textContent=targetText(tg);
   const st=segStats[idx];
   $("segAvg").textContent=st.n?Math.round(st.sum/st.n):"--";
@@ -743,6 +813,7 @@ function updateUI(){
   const c=judge(w,tg);
   const live=(Date.now()-lastPowerAt<4000)||$("simOn").checked;
   if(!live){$("stLabel").textContent="파워 신호 없음";$("hint").textContent="파워미터를 연결하거나 테스트 모드를 켜세요";draw();return}
+  if(s.kind==="free"){$("stLabel").textContent="자유 라이딩";$("hint").textContent=w>0?"마음대로 달리세요":"페달을 밟아 출발하세요";draw();return}
   if(s.kind==="sprint"){box.classList.add(c==="blue"?"purple":"red");$("stLabel").textContent=c==="blue"?"좋아요! 끝까지!":"더 세게!!"}
   else{
     box.classList.add(c);
@@ -762,12 +833,14 @@ function draw(){
   g.clearRect(0,0,W,H);
   if(!total) return;
   const F=FTP(), maxW=Math.max(1.7*F, ...trace.map(p=>p.w), 400);
-  const X=s=>s/total*W, Y=w=>H-12-(w/maxW)*(H-24);
+  const freeMode=steps.length===1&&steps[0].kind==="free",span=freeMode?Math.max(1800,t+300):total;
+  const X=s=>s/span*W, Y=w=>H-12-(w/maxW)*(H-24);
   // FTP line
   g.strokeStyle="#30363d";g.setLineDash([6,6]);g.beginPath();g.moveTo(0,Y(F));g.lineTo(W,Y(F));g.stroke();g.setLineDash([]);
   g.fillStyle="#6e7681";g.font="22px sans-serif";g.fillText("FTP "+F+"W",8,Y(F)-6);
   // targets
   steps.forEach((s,i)=>{
+    if(s.kind==="free")return;
     const x0=X(starts[i]),x1=X(starts[i]+s.dur);
     g.fillStyle=s.kind==="int"?"rgba(47,129,247,.55)":s.kind==="sprint"?"rgba(137,87,229,.6)":"rgba(47,129,247,.22)";
     if(s.kind==="ramp"){
@@ -830,6 +903,15 @@ function summary(){
     rows.push(`<tr><td>${s.name}</td><td>${tt}</td><td><b>${a}W</b></td><td class="good">${ok}%</td><td class="bad">${lo}%</td><td class="high">${hi}%</td></tr>`);
     lines.push(`${s.name}: 평균 ${a}W (목표 ${tt}) · 파란불 ${ok}%`);
   });
+  // 거리·획고·속도 (가상 라이딩 기준) + 자유 라이딩은 기록 요약표로
+  const km=(World.distance/1000),cl=Math.round(World.climbed||0),ws=trace.map(p=>p.w||0),avgW=ws.length?Math.round(ws.reduce((a,b)=>a+b,0)/ws.length):0,maxW=ws.length?Math.max(...ws):0,np=calcNP()||0;
+  const hrs=trace.map(p=>p.h).filter(Boolean),avgH=hrs.length?Math.round(hrs.reduce((a,b)=>a+b,0)/hrs.length):null,spd=t>0?km/(t/3600):0;
+  if(steps.length===1&&steps[0].kind==="free"){
+    rows.length=0;rows.push(`<tr><th>항목</th><th>기록</th></tr>`);
+    for(const[k,v]of[["시간",fmt(t)],["거리",km.toFixed(2)+" km"],["평균 속도",spd.toFixed(1)+" km/h"],["획고",cl+" m"],["평균 파워",avgW+" W"],["NP",np+" W"],["최대 파워",Math.round(maxW)+" W"],["평균 심박",avgH?avgH+" bpm":"-"],["코스",World.course?World.course.name:"가상 언덕길"]])rows.push(`<tr><td>${k}</td><td><b>${v}</b></td></tr>`);
+    lines.length=1;
+  }
+  lines.push(`거리 ${km.toFixed(2)}km · 평균 ${spd.toFixed(1)}km/h · 획고 ${cl}m · 평균 ${avgW}W · NP ${np}W${avgH?" · 심박 "+avgH:""}`);
   $("sumTbl").innerHTML=rows.join("");
   $("summary").style.display="block";if(matchMedia("(min-width:861px) and (max-height:1000px)").matches)$("sumBack").style.display="block";
   $("summary")._text=lines.join("\n");
@@ -995,7 +1077,7 @@ async function simControl(){
 async function ergControl(s,tg){
   const mode=$("resMode").value;
   if(!ftmsCP||mode==="off"){if(ergActive)ergRelease();return}
-  if(mode==="sim") return simControl();
+  if(mode==="sim"||s.kind==="free") return simControl();
   if(s.kind==="sprint"){ if(!ergReleased){await cpWrite([0x01]);ergReleased=true;ergActive=false;lastErgTarget=null} return}
   if(!ergActive){await cpWrite([0x00]);await cpWrite([0x07]);ergActive=true;ergReleased=false}
   const target=Math.round(tg.t);
@@ -1339,7 +1421,7 @@ const World=(()=>{
     routeLatLng(every=15){if(!course)return [];const kx=111320*Math.cos(course.lat0*Math.PI/180),ky=110540,o=[];for(let i=0;i<course.x.length;i+=every)o.push([+(course.lat0-course.z[i]/ky).toFixed(5),+(course.lng0+course.x[i]/kx).toFixed(5)]);return o},
     reset(){v=0;dist=0;climbed=0},
     jump(d){dist=d},
-    get speed(){return v},get distance(){return dist},get grade(){return grade},get course(){return course},get _sc(){return SC},
+    get speed(){return v},get distance(){return dist},get grade(){return grade},get climbed(){return climbed},get course(){return course},get _sc(){return SC},
   };
 })();
 
@@ -1358,12 +1440,13 @@ function setMember(keepWo){
   }
   setWeek(keepWo);
 }
+const FREE_RIDE={name:"🚲 자유 라이딩 (목표 없음)",steps:()=>[{name:"자유 라이딩",kind:"free",dur:4*3600,say:"자유 라이딩을 시작합니다. 마음껏 달리세요."}]};
 function setWeek(keepWo){
-  const w=curWeek(); WORKOUTS=w.workouts;
+  const w=curWeek(); WORKOUTS=Object.assign({},w.workouts,{free:FREE_RIDE});
   const prev=$("woSel").value;
   fillSel($("woSel"),Object.entries(WORKOUTS).map(([k,v])=>[k,v.name]));
   if(keepWo&&WORKOUTS[prev]) $("woSel").value=prev;
-  else { try{const d=new Date().getDay();const want={1:"mon",3:"wed",4:"thu",5:"fri"}[d]||{2:"a",6:"b",0:"c"}[d];$("woSel").value=WORKOUTS[want]?want:Object.keys(WORKOUTS)[0]}catch(e){} }
+  else { try{const td=new Date(),tk="d"+td.getFullYear()+"-"+(td.getMonth()+1)+"-"+td.getDate();if(WORKOUTS[tk]){$("woSel").value=tk;throw 0}const d=new Date().getDay();const want={1:"mon",3:"wed",4:"thu",5:"fri"}[d]||{2:"a",6:"b",0:"c"}[d];$("woSel").value=WORKOUTS[want]?want:Object.keys(WORKOUTS)[0]}catch(e){} }
   $("ftp").value=w.ftp;
   $("memTag").textContent=curProg().name.replace(/ \(.*\)/,"")+(curProg().weeks.length>1?" · "+w.label.split(" · ")[0]:"");
   load();
