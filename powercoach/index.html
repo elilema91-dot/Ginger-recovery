@@ -72,6 +72,9 @@
   .target{font-size:21px;font-weight:700;opacity:.95;margin-top:2px}
   .hint{font-size:19px;font-weight:600;margin-top:6px;opacity:.92}
 
+  .tInfo{display:none}
+  .arena{margin-top:14px;border-radius:20px;border:1px dashed rgba(255,255,255,.25);background:linear-gradient(180deg,#0b1a33 0%,#13264a 55%,#1b2a3a 56%,#2b3b4e 100%);min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:15px;line-height:1.6}
+  .arena small{font-size:12px;opacity:.8}
   .side{display:grid;gap:14px}
   .seg{font-size:20px;font-weight:800;letter-spacing:-.01em}
   .big{font-family:var(--mono);font-size:64px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;margin-top:4px}
@@ -167,27 +170,73 @@
     .wrap>.card .btn{padding:7px 12px;font-size:13px;white-space:nowrap}
     label.chk{font-size:12px;white-space:nowrap}
     .dev{margin-top:4px;font-size:12px}
-    .main{flex:1;min-height:0;margin:0;grid-template-columns:1fr 1.1fr;gap:10px;max-height:calc(100vh - 150px)}
+    .main{flex:1;min-height:0;margin:0;display:block;position:relative;max-height:none}
+    .main>div:first-child{position:absolute;inset:0}
+    .side{position:absolute;inset:0;display:block;pointer-events:none;z-index:3}
+    .side>*{pointer-events:auto;position:absolute}
+    .side>.card{left:50%;transform:translateX(-50%);top:12px;width:36%;background:rgba(8,10,16,.6);border-color:rgba(255,255,255,.14);backdrop-filter:blur(8px);padding:8px 14px 10px;text-align:center}
+    .side>.card .seg{font-size:15px}
+    .big{font-size:clamp(36px,7vh,56px)}
+    .prog{margin:6px 0 4px}
+    .next{font-size:13px}
+    .side>.row{right:12px;width:24%;gap:6px}
+    #rowNP{display:none}
+    .side>.row{top:12px}
+    .side .stat{background:rgba(8,10,16,.6);border-color:rgba(255,255,255,.14);backdrop-filter:blur(8px);padding:5px 4px;height:9vh;display:flex;flex-direction:column;justify-content:center}
+    .side .stat .k{font-size:10px}
+    .side .stat .v{font-size:clamp(20px,4vh,34px);margin-top:0}
+    .side canvas{position:absolute;left:0;bottom:0;width:100%;height:14vh;background:linear-gradient(180deg,transparent,rgba(0,0,0,.45));border:none;border-radius:0 0 22px 22px;margin:0}
+    .side .legend{display:none}
+    .side .ctl{position:absolute;right:12px;bottom:calc(14vh + 10px);left:auto;width:auto;background:transparent;border:none;padding:0;flex-wrap:nowrap;gap:6px}
+    .side .ctl .btn{padding:9px 12px;font-size:13px;backdrop-filter:blur(6px);background:rgba(8,10,16,.6)}
+    .side .ctl .btn.ok{background:linear-gradient(135deg,#16a34a,#15803d)} .side .ctl .btn.warn{background:linear-gradient(135deg,#b91c1c,#7f1d1d)}
+    .side .ctl #btnStart{flex:none;min-width:120px}
+    .arena{align-items:center;justify-content:center;padding:0 0 10vh 0}
     .main>div:first-child{display:flex;flex-direction:column;min-height:0}
-    .power{flex:1;min-height:0;padding:10px 14px 8px;border-radius:20px;justify-content:space-evenly}
+    .power{position:absolute;left:12px;top:12px;z-index:2;width:min(270px,26%);min-height:0;padding:10px 14px 10px;border-radius:14px;display:flex;flex-direction:column;align-items:stretch;text-align:left;gap:4px;background:rgba(8,10,16,.6)!important;border:1px solid rgba(255,255,255,.14);box-shadow:0 8px 30px rgba(0,0,0,.4);backdrop-filter:blur(8px);text-shadow:0 1px 4px rgba(0,0,0,.6)}
+    .power::after{display:none}
+    .power .gauge{display:none}
+    .power .tInfo{display:flex;flex-direction:column;gap:2px;order:1}
+    .tW{display:flex;align-items:baseline;justify-content:center;gap:6px}
+    .tW b{font-family:var(--mono);font-size:clamp(48px,9vh,76px);font-weight:800;line-height:1;letter-spacing:-.04em}
+    .tW small{font-size:22px;font-weight:700;opacity:.8}
+    .power.blue .tW b{color:#60a5fa} .power.red .tW b{color:#f87171} .power.orange .tW b{color:#fb923c} .power.purple .tW b{color:#c4b5fd}
+    .zbar{order:2;width:100%;margin:2px 0 4px;height:9px}
+    .tVit{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:12px;text-align:center}
+    .tVit b{font-family:var(--mono);font-size:clamp(22px,4vh,34px);font-weight:800;margin:0 3px}
+    .tVit small{font-size:12px;opacity:.75}
+    .tTgt{font-size:clamp(14px,2.2vh,18px);font-weight:700;text-align:center;opacity:.95}
+    .hint{order:3;font-size:clamp(14px,2.2vh,18px);text-align:center;margin:0}
+    .zone{order:4;align-self:center;font-size:12px;background:rgba(0,0,0,.35)}
+    .stLabel{order:5;align-self:center;font-size:11px;padding:2px 10px;margin-top:2px}
+    .power.blue .stLabel{background:rgba(37,99,235,.8)} .power.red .stLabel{background:rgba(220,38,38,.85)} .power.orange .stLabel{background:rgba(234,88,12,.85)} .power.purple .stLabel{background:rgba(124,58,237,.85)}
+    .arena{position:absolute;inset:0;margin:0;border-radius:22px;border:1px solid var(--line);align-items:flex-end;padding-bottom:18px}
+    .power{position:absolute;left:12px;right:12px;top:12px;z-index:2;background:transparent!important;border:none;box-shadow:none;backdrop-filter:none;text-shadow:0 2px 10px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.9)}
+    .power::after{display:none}
+    .power .stLabel{background:rgba(0,0,0,.45);border-color:rgba(255,255,255,.3)}
+    .power.blue .stLabel{background:rgba(37,99,235,.75)} .power.red .stLabel{background:rgba(220,38,38,.8)} .power.orange .stLabel{background:rgba(234,88,12,.8)} .power.purple .stLabel{background:rgba(124,58,237,.8)}
+    .power .gauge .track{stroke:rgba(255,255,255,.18)} .power .gauge .band{stroke:rgba(255,255,255,.4)}
+    .power.blue .gauge .val{stroke:#60a5fa;filter:drop-shadow(0 0 8px rgba(96,165,250,.8))}
+    .power.red .gauge .val{stroke:#f87171;filter:drop-shadow(0 0 8px rgba(248,113,113,.8))}
+    .power.orange .gauge .val{stroke:#fb923c;filter:drop-shadow(0 0 8px rgba(251,146,60,.8))}
+    .power.purple .gauge .val{stroke:#c4b5fd;filter:drop-shadow(0 0 8px rgba(196,181,253,.8))}
+    .power .zone{background:rgba(0,0,0,.45)}
+    #rowTime{display:none}
+    canvas{height:clamp(80px,12vh,120px);margin-top:0}
     .stLabel{font-size:12px;padding:3px 12px}
-    .gauge{width:min(40vh,340px);margin:0 auto}
-    .watt{font-size:clamp(56px,11vh,100px)}
     .watt small{font-size:20px}
-    .target{font-size:clamp(16px,2.6vh,24px)}
     .vitals{gap:26px;font-size:18px;margin-top:4px}
     .vitals b{font-size:clamp(34px,6vh,54px)}
     .vitals small{font-size:14px}
     .hint{font-size:clamp(15px,2.4vh,20px);margin-top:2px}
     .zbar{height:8px;margin-top:6px}
     .zlegend{display:none}
-    canvas{height:clamp(90px,14vh,150px);margin-top:8px;flex:none}
     .legend{display:none}
     .side{gap:10px;grid-template-rows:auto auto auto auto auto;align-content:start}
     .side .card{padding:12px 14px}
     .seg{font-size:18px}
     .side .card .sub{display:none}
-    .big{font-size:clamp(48px,9vh,80px)}
+    .big{font-size:clamp(40px,8vh,64px)}
     .prog{margin:8px 0 6px}
     .next{font-size:14px}
     .stat{padding:8px}
@@ -255,17 +304,13 @@
             <div class="vitals"><span>❤️ <b id="hrBig">--</b><small>bpm</small></span><span>⟳ <b id="cadBig">--</b><small>rpm</small></span></div>
           </div>
         </div>
+        <div class="tInfo"><div class="tW"><b id="wNow2">--</b><small>W</small></div><div class="tTgt" id="tgt2">목표 --</div><div class="tVit"><span>❤️ <b id="hrBig2">--</b><small>bpm</small></span><span>⟳ <b id="cadBig2">--</b><small>rpm</small></span><span>Ø <b id="avg2">--</b><small>평균</small></span><span>NP <b id="np2">--</b><small>W</small></span></div></div>
         <div class="hint" id="hint">&nbsp;</div>
         <div class="zone" id="zoneChip"><i id="zoneDot" style="background:#9aa3ad"></i><span id="zoneTxt">Z1 회복</span></div>
         <div class="zbar" id="zbar"></div>
         <div class="zlegend"><span>회색 Z1</span><span style="color:#60a5fa">파랑 Z2</span><span style="color:#4ade80">초록 Z3</span><span style="color:#facc15">노랑 Z4</span><span style="color:#fb923c">주황 Z5</span><span style="color:#f87171">빨강 Z6</span></div>
       </div>
-      <canvas id="cv" width="1400" height="340"></canvas>
-      <div class="legend">
-        <span><i style="background:#2f81f7"></i>목표</span>
-        <span><i style="background:#f0f6fc"></i>내 파워</span>
-        <span><i style="background:#3fb950"></i>현재 위치</span>
-      </div>
+      <div class="arena" id="arena"><span>🚴 가상 라이딩 애니메이션 자리<br><small>속도에 맞춰 캐릭터가 달리는 공간 (준비 중)</small></span></div>
     </div>
     <div class="side">
       <div class="card">
@@ -275,17 +320,23 @@
         <div class="prog"><i id="segProg"></i></div>
         <div class="next" id="next">다음: -</div>
       </div>
-      <div class="row">
+      <div class="row" id="rowNP">
         <div class="stat"><div class="k">NP (노멀라이즈드)</div><div class="v" id="np">--</div></div>
         <div class="stat"><div class="k">평균 파워 (전체)</div><div class="v" id="avgAll">--</div></div>
       </div>
-      <div class="row">
+      <div class="row" id="rowTime">
         <div class="stat"><div class="k">경과</div><div class="v" id="el">0:00</div></div>
         <div class="stat"><div class="k">전체</div><div class="v" id="tot">0:00</div></div>
       </div>
       <div class="row">
         <div class="stat"><div class="k">구간 평균</div><div class="v" id="segAvg">--</div></div>
         <div class="stat"><div class="k">파란불 비율</div><div class="v" id="segOk">--</div></div>
+      </div>
+      <canvas id="cv" width="1400" height="340"></canvas>
+      <div class="legend">
+        <span><i style="background:#2f81f7"></i>목표</span>
+        <span><i style="background:#f0f6fc"></i>내 파워</span>
+        <span><i style="background:#3fb950"></i>현재 위치</span>
       </div>
       <div class="bar ctl">
         <button class="btn ok" id="btnStart" style="flex:1">▶ 시작</button>
@@ -641,8 +692,9 @@ function updateUI(){
   const w=Math.round(avg3());
   zoneUI(w);
   $("wNow").textContent=(Date.now()-lastPowerAt<4000||$("simOn").checked)?w:"--";
-  $("np").textContent=calcNP()||"--";
-  $("avgAll").textContent=trace.length?Math.round(trace.reduce((a,p)=>a+(p.w||0),0)/trace.length):"--";
+  $("tgt2").textContent=$("tgt").textContent;$("wNow2").textContent=$("wNow").textContent;$("hrBig2").textContent=$("hrBig").textContent;$("cadBig2").textContent=$("cadBig").textContent;
+  $("np").textContent=calcNP()||"--"; $("np2").textContent=$("np").textContent;
+  $("avgAll").textContent=trace.length?Math.round(trace.reduce((a,p)=>a+(p.w||0),0)/trace.length):"--"; $("avg2").textContent=$("avgAll").textContent;
   $("hrBig").textContent=hrNow!=null?hrNow:"--";
   $("cadBig").textContent=cadence!=null?Math.round(cadence):"--";
   $("el").textContent=fmt(t);
