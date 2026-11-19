@@ -79,6 +79,7 @@
   #world{position:absolute;inset:0;width:100%;height:100%;display:block;margin:0;border:none;border-radius:inherit;background:transparent}
   .spd{display:flex;justify-content:center;gap:18px;margin-top:6px;font-size:13px;color:var(--muted)}
   .spd b{font-family:var(--mono);font-size:20px;color:var(--text);font-weight:800}
+  .spd .up b{color:#fb923c} .spd .down b{color:#60a5fa}
   .side{display:grid;gap:14px}
   .seg{font-size:20px;font-weight:800;letter-spacing:-.01em}
   .big{font-family:var(--mono);font-size:64px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;margin-top:4px}
@@ -276,7 +277,7 @@
     <div class="bar">
       <button class="btn primary" id="btnPower">🔗 파워미터/트레이너 연결</button>
       <button class="btn" id="btnHr">❤️ 심박계 연결</button>
-      <label class="chk"><input type="checkbox" id="erg" disabled> 트레이너 ERG 자동 저항</label>
+      <label class="chk">트레이너 저항 <select id="resMode" disabled><option value="off">끔</option><option value="erg">ERG · 목표 와트 고정</option><option value="sim" selected>코스 경사 따라 (SIM)</option></select></label>
       <label class="chk"><input type="checkbox" id="simOn"> 테스트 모드(기기 없이)</label>
       <label class="chk"><input type="checkbox" id="voiceOn" checked> 음성 안내</label>
     </div>
@@ -323,7 +324,7 @@
         <div class="big" id="segLeft">--:--</div>
         <div class="prog"><i id="segProg"></i></div>
         <div class="next" id="next">다음: -</div>
-        <div class="spd"><span><b id="spdV">0.0</b> km/h</span><span><b id="distV">0.00</b> km</span></div>
+        <div class="spd"><span><b id="spdV">0.0</b> km/h</span><span><b id="distV">0.00</b> km</span><span id="gradeBox">⛰ <b id="gradeV">0.0</b> %</span></div>
       </div>
       <div class="row" id="rowNP">
         <div class="stat"><div class="k">NP (노멀라이즈드)</div><div class="v" id="np">--</div></div>
@@ -365,7 +366,7 @@
   <details class="note"><summary>사용 안내</summary>
     • 크롬 브라우저(맥북·윈도우·안드로이드)에서 열어야 블루투스가 연결돼요. 아이폰은 기본 브라우저에서 블루투스가 안 되고, 앱스토어의 'Bluefy' 브라우저로 열면 돼요.<br>
     • 즈위프트를 켜놓은 상태면 파워미터가 즈위프트에 잡혀 있어서 여기서 안 보일 수 있어요. 즈위프트를 끄고 연결하세요.<br>
-    • 'ERG 자동 저항'은 스마트 트레이너로 연결했을 때만 켜져요. 켜면 트레이너가 목표 와트로 저항을 알아서 맞춰요(15초 스프린트 구간에서는 자동으로 풀려요).<br>
+    • '트레이너 저항'은 스마트 트레이너로 연결했을 때만 바꿀 수 있어요. ERG = 목표 와트로 고정(스프린트 구간은 자동으로 풀림), 코스 경사 따라(SIM) = 화면 속 오르막·내리막에 맞춰 저항이 바뀜(내리막은 절반만 적용).<br>
     • 스페이스바 = 일시정지/재개. 파워는 3초 평균으로 판단해요.
   </details>
 </div>
@@ -731,8 +732,8 @@ function updateUI(){
     $("stLabel").textContent=c==="blue"?"좋아요 · 목표 안":c==="red"?"파워 모자람 ↑":"너무 높음 ↓";
   }
   let h="";
-  if(tg.mode==="range"){ if(w<tg.lo)h=`${Math.round(tg.lo-w)}W 더 올리세요`; else if(w>tg.hi)h=`${Math.round(w-tg.hi)}W 낮추세요`; else h="이대로 유지!"}
-  else if(tg.mode==="cap"){ h=w>tg.hi?`${Math.round(w-tg.hi)}W 낮추세요`:"편하게 유지"}
+  if(tg.mode==="range"){ if(w<tg.lo)h=`${Math.max(1,Math.round(tg.lo-w))}W 더 올리세요`; else if(w>tg.hi)h=`${Math.max(1,Math.round(w-tg.hi))}W 낮추세요`; else h="이대로 유지!"}
+  else if(tg.mode==="cap"){ h=w>tg.hi?`${Math.max(1,Math.round(w-tg.hi))}W 낮추세요`:"편하게 유지"}
   else h="전력으로!";
   $("hint").textContent=h;
   draw();
@@ -903,7 +904,7 @@ async function connectPower(){
       // 일부 브라우저는 필터 방식을 못 써요 → 모든 기기 보여주기
       dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[CP_SVC,FTMS_SVC]});
     }
-    dev.addEventListener("gattserverdisconnected",()=>{$("dP").classList.remove("on");$("nmP").textContent="연결 끊김";$("erg").disabled=true;ftmsCP=null;say("파워미터 연결이 끊겼어요",true)});
+    dev.addEventListener("gattserverdisconnected",()=>{$("dP").classList.remove("on");$("nmP").textContent="연결 끊김";$("resMode").disabled=true;ftmsCP=null;say("파워미터 연결이 끊겼어요",true)});
     const srv=await dev.gatt.connect();
     let usedFtms=false;
     try{
@@ -912,7 +913,7 @@ async function connectPower(){
       bike.addEventListener("characteristicvaluechanged",e=>parseFtms(e.target.value));
       await bike.startNotifications();
       usedFtms=true;
-      try{ftmsCP=await fs.getCharacteristic(FTMS_CP);await ftmsCP.startNotifications();$("erg").disabled=false}catch(e){ftmsCP=null}
+      try{ftmsCP=await fs.getCharacteristic(FTMS_CP);await ftmsCP.startNotifications();$("resMode").disabled=false}catch(e){ftmsCP=null}
     }catch(e){}
     if(!usedFtms){
       const ps=await srv.getPrimaryService(CP_SVC);
@@ -963,8 +964,21 @@ function parseFtms(v){
   if(f&0x40){pushPower(Math.max(0,v.getInt16(o,true)));o+=2}
 }
 async function cpWrite(bytes){try{await ftmsCP.writeValueWithResponse?ftmsCP.writeValueWithResponse(new Uint8Array(bytes)):ftmsCP.writeValue(new Uint8Array(bytes))}catch(e){}}
+let simLastG=null,simLastAt=0;
+async function simControl(){
+  if(!ergActive){await cpWrite([0x00]);await cpWrite([0x07]);ergActive=true;ergReleased=false;lastErgTarget=null;simLastG=null}
+  let gp=(typeof World!=="undefined"?World.grade:0)*100;           // %
+  if(gp<0) gp*=0.5;                                                 // 내리막은 절반만 (헛돌지 않게)
+  gp=Math.max(-10,Math.min(15,gp));
+  const g=Math.round(gp*100);                                       // 0.01% 단위
+  if(simLastG!==null&&Math.abs(g-simLastG)<20&&Date.now()-simLastAt<3000) return;
+  simLastG=g;simLastAt=Date.now();
+  await cpWrite([0x11,0,0,g&255,(g>>8)&255,40,51]);                // 바람0 · 경사 · 구름저항 0.004 · 공기저항 0.51
+}
 async function ergControl(s,tg){
-  if(!ftmsCP||!$("erg").checked){if(ergActive)ergRelease();return}
+  const mode=$("resMode").value;
+  if(!ftmsCP||mode==="off"){if(ergActive)ergRelease();return}
+  if(mode==="sim") return simControl();
   if(s.kind==="sprint"){ if(!ergReleased){await cpWrite([0x01]);ergReleased=true;ergActive=false;lastErgTarget=null} return}
   if(!ergActive){await cpWrite([0x00]);await cpWrite([0x07]);ergActive=true;ergReleased=false}
   const target=Math.round(tg.t);
@@ -1028,7 +1042,7 @@ const World=(()=>{
   let kit=KITS.me;
 
   // ---- 라이더 + 자전거 (매 프레임 다시 만듦: 다리·바퀴가 돌아가니까) ----
-  function rider(crank,wheel){
+  function rider(crank,wheel,pitch){
     const m=M(),R=.34,J=kit.jersey,FR=kit.frame;
     const rw=[-.52,R,0],fw=[.52,R,0],bb=[0,.30,0],st=[-.14,.80,0],ht=[.40,.80,0],hb=[.44,.66,0];
     for(const wc of[rw,fw]){torus(m,wc,R-.03,.035,C.tire,12,4);torus(m,wc,R-.075,.018,C.rim,12,3);
@@ -1059,6 +1073,7 @@ const World=(()=>{
     for(const k of[-1,0,1])box(m,add(head,[-.03,.205-.02*Math.abs(k),.08*k]),[.26,.025,.03],C.white);
     box(m,add(head,[.19,.03,0]),[.05,.07,.30],C.goggle);
     for(const s of[-1,1])ico(m,add(head,[.17,-.07,.12*s]),.035,C.cheek,0);
+    if(pitch){const c=Math.cos(pitch),sn=Math.sin(pitch),rot=p=>[p[0]*c-p[1]*sn,p[0]*sn+p[1]*c,p[2]];for(const t of m){t[0]=rot(t[0]);t[1]=rot(t[1]);t[2]=rot(t[2])}}
     return m;
   }
   // ---- 풍경 오브젝트 (한 번 만들어 두고 위치만 옮김) ----
@@ -1070,12 +1085,16 @@ const World=(()=>{
   {const m=M();for(const[x,c]of[[0,[255,120,140]],[.12,[255,220,90]],[-.1,[255,255,255]]]){cyl(m,[x,0,x*.5],[x,.14,x*.5],.008,[90,160,90],3);ico(m,[x,.16,x*.5],.035,c,0)}PROPS.push(m)}
   {const m=M();box(m,[0,.55,0],[1.1,1.1,1.0],[255,244,230]);cyl(m,[-.6,1.1,0],[.6,1.1,0],.62,[230,110,90],4,.62);box(m,[.56,.35,0],[.02,.7,.35],[150,105,80]);box(m,[.56,.75,.3],[.02,.25,.25],[160,210,255]);PROPS.push(m)}
   const CLOUD=(()=>{const m=M();for(const[x,y,r]of[[0,0,1.2],[1.1,.2,.9],[-1.0,.1,.8],[.4,.6,.8]])ico(m,[x,y,0],r,[255,255,255],0,[1,.75,.8],false,.1,7);return m})();
+  // ---- 지형: 완만한 언덕 (경사 대략 -6% ~ +6%) ----
+  const Hh=x=>6*Math.sin(x/220)+2.5*Math.sin(x/90+1.3)+0.8*Math.sin(x/35+2.1);
+  const Gr=x=>6/220*Math.cos(x/220)+2.5/90*Math.cos(x/90+1.3)+0.8/35*Math.cos(x/35+2.1);
   function hash(i){let x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)}
 
   // ---- 물리: 파워 → 속도 ----
   let v=0,dist=0,crank=0,wheel=0,kg=65,lastT=performance.now(),bob=0;
-  function solveV(P,dt){const m=kg+8,Crr=.004,CdA=.32,rho=1.2,G=9.81;const vv=Math.max(v,.5);
-    const F=Crr*m*G+.5*rho*CdA*vv*vv,a=(P/vv-F)/m;v=Math.max(0,v+a*dt);if(P<1&&v<.3)v=0}
+  let grade=0;
+  function solveV(P,dt){const m=kg+8,Crr=.004,CdA=.32,rho=1.2,G=9.81;const vv=Math.max(v,.5),th=Math.atan(grade);
+    const F=Crr*m*G*Math.cos(th)+m*G*Math.sin(th)+.5*rho*CdA*vv*vv,a=(P/vv-F)/m;v=Math.min(25,Math.max(0,v+a*dt));if(P<1&&v<.3&&grade>=0)v=0}
   // ---- 카메라·투영 ----
   const L=nrm([.4,.85,.35]),SKY0=[150,205,255],SKY1=[255,232,222],GR0=[140,206,130],GR1=[198,226,190];
   let W=0,H=0,dpr=1;
@@ -1083,34 +1102,40 @@ const World=(()=>{
   function frame(now){
     const dt=Math.min(.1,(now-lastT)/1000);lastT=now;resize();
     const live=typeof running!=="undefined"&&running&&!paused;
-    const P=live?(typeof avg3==="function"?avg3():0):0;solveV(P,dt);
-    if(live)dist+=v*dt;
+    grade=Gr(dist);const P=live?(typeof avg3==="function"?avg3():0):0;solveV(live||v>0?P:0,dt);
+    if(live||v>0)dist+=v*dt;
     const cad=(typeof cadence==="number"&&cadence>0&&live)?cadence:(v>0.5?Math.min(100,60+v*1.2):0);
     crank-=cad/60*2*Math.PI*dt;wheel-=v/.34*dt;bob+=dt*cad/60*2*Math.PI;
     const rx=dist,sway=Math.sin(bob)*.006;
-    const eye=[rx-4.6,2.05+Math.sin(now/2300)*.03,.55],tgt=[rx+3.5,1.05,0];
+    const hb=Hh(rx),eye=[rx-4.6,hb+2.05+Math.sin(now/2300)*.03,.55],tgt=[rx+3.5,hb+1.05+.3*(Hh(rx+3.5)-hb),0];
     const f=nrm(sub(tgt,eye)),r=nrm(cross(f,[0,1,0])),u=cross(r,f),foc=(H/2)/Math.tan(38*Math.PI/360);
     const proj=p=>{const d=sub(p,eye),z=dot(d,f);return z<.05?null:[W/2+foc*dot(d,r)/z,H/2-foc*dot(d,u)/z,z]};
     // 하늘
-    const hz=proj([rx+4000,0,0]),hy=hz?hz[1]:H*.4;
+    const hz=proj([rx+4000,eye[1]-1.6,0]),hy=hz?hz[1]:H*.4;
     let gr=g.createLinearGradient(0,0,0,hy);gr.addColorStop(0,`rgb(${SKY0})`);gr.addColorStop(1,`rgb(${SKY1})`);g.fillStyle=gr;g.fillRect(0,0,W,hy+1);
     gr=g.createLinearGradient(0,hy,0,H);gr.addColorStop(0,`rgb(${GR1})`);gr.addColorStop(.25,`rgb(${GR0})`);gr.addColorStop(1,`rgb(${GR0.map(c=>c*.92|0)})`);g.fillStyle=gr;g.fillRect(0,hy,W,H-hy);
-    // 도로
-    const nx=eye[0]+.3,fx=rx+400,poly=(pts,col)=>{const q=pts.map(proj);if(q.some(x=>!x))return;g.beginPath();g.moveTo(q[0][0],q[0][1]);for(const p of q.slice(1))g.lineTo(p[0],p[1]);g.closePath();g.fillStyle=col;g.fill()};
-    poly([[nx,0,-1.05],[nx,0,1.05],[fx,0,1.05],[fx,0,-1.05]],"rgb(214,208,202)");
-    poly([[nx,0,-1.05],[nx,0,-.95],[fx,0,-.95],[fx,0,-1.05]],"rgb(245,245,245)");poly([[nx,0,.95],[nx,0,1.05],[fx,0,1.05],[fx,0,.95]],"rgb(245,245,245)");
-    for(let x=Math.floor(nx/3)*3;x<rx+70;x+=3){if(x+1.4<nx)continue;poly([[Math.max(x,nx),0,-.03],[Math.max(x,nx),0,.03],[x+1.4,0,.03],[x+1.4,0,-.03]],"rgb(255,255,255)")}
+    // 땅·도로 (언덕 따라 조각조각, 먼 곳부터)
+    const nx=eye[0]+.3,poly=(pts,col)=>{const q=pts.map(proj);if(q.some(x=>!x))return;g.beginPath();g.moveTo(q[0][0],q[0][1]);for(const p of q.slice(1))g.lineTo(p[0],p[1]);g.closePath();g.fillStyle=col;g.strokeStyle=col;g.lineWidth=1;g.fill();g.stroke()};
+    const fogc=(c,z)=>{const fg=Math.min(1,Math.max(0,(z-12)/80));return `rgb(${c.map((cc,i)=>Math.round(cc*(1-fg)+SKY1[i]*fg))})`};
+    const SEG=[];for(let x=nx;x<rx+160;){const st=x-rx<20?1.5:x-rx<60?3:6;SEG.push([x,Math.min(x+st,rx+160)]);x+=st}
+    for(let k=SEG.length-1;k>=0;k--){const[x0,x1]=SEG[k],y0=Hh(x0),y1=Hh(x1),z=x0-eye[0],gr=(y1-y0)/(x1-x0),lit=Math.max(.85,Math.min(1.12,1+gr*3));
+      const gc=GR0.map(c=>Math.min(255,c*lit)),gc2=GR1.map(c=>Math.min(255,c*lit));
+      for(const[za,zb,cc]of[[1.05,8,gc],[8,40,gc],[40,220,gc2],[-8,-1.05,gc],[-40,-8,gc],[-220,-40,gc2]])poly([[x0,y0,za],[x0,y0,zb],[x1,y1,zb],[x1,y1,za]],fogc(cc,z));
+      poly([[x0,y0+.001,-1.05],[x0,y0+.001,1.05],[x1,y1+.001,1.05],[x1,y1+.001,-1.05]],fogc([214,208,202],z));
+      poly([[x0,y0+.002,-1.05],[x0,y0+.002,-.95],[x1,y1+.002,-.95],[x1,y1+.002,-1.05]],fogc([245,245,245],z));
+      poly([[x0,y0+.002,.95],[x0,y0+.002,1.05],[x1,y1+.002,1.05],[x1,y1+.002,.95]],fogc([245,245,245],z))}
+    for(let x=Math.floor(nx/3)*3;x<rx+70;x+=3){const xa=Math.max(x,nx),xb=x+1.4;if(xb<nx)continue;const ya=Hh(xa)+.004,yb=Hh(xb)+.004;poly([[xa,ya,-.03],[xa,ya,.03],[xb,yb,.03],[xb,yb,-.03]],fogc([255,255,255],x-eye[0]))}
     // 3D 오브젝트
     const items=[];
     const push=(mesh,off,fogOn=true)=>{for(const t of mesh)items.push([t,off,fogOn])};
-    for(let k=0;k<3;k++){const cx=rx*.97+((k*37+11)%60)-10,ci=Math.floor((rx*.03+k*20)/60);push(CLOUD,[rx+40+((k*31+hash(ci+k)*40)%70)-5,7+k*1.3,-14+k*12],false)}
+    for(let k=0;k<3;k++){const cx=rx*.97+((k*37+11)%60)-10,ci=Math.floor((rx*.03+k*20)/60);push(CLOUD,[rx+40+((k*31+hash(ci+k)*40)%70)-5,eye[1]+9+k*1.5,-30+k*28],false)}
     const T0=Math.floor((eye[0]-1)/2.5),T1=Math.floor((rx+70)/2.5);
     for(let i=T0;i<=T1;i++){const x=i*2.5;
       for(const side of[-1,1]){const h=hash(i*2+(side>0?1:0));if(h<.35)continue;
         const kind=h>.97?8:h>.9?6:h>.82?7:h>.6?Math.floor(hash(i+7)*3):3+Math.floor(hash(i+9)*3);
         const z=side*(kind===6||kind===7?1.35+hash(i+3)*.6:kind===8?4+hash(i)*3:1.8+hash(i+5)*5);
-        push(PROPS[kind],[x+hash(i+1)*2,0,z])}}
-    push(rider(crank,wheel),[rx,sway,0]);
+        {const px=x+hash(i+1)*2;push(PROPS[kind],[px,Hh(px)-.02,z])}}}
+    push(rider(crank,wheel,Math.atan(grade)),[rx,Hh(rx)+sway,0]);
     // 투영·정렬
     const polys=[];
     for(const[t,o,fogOn]of items){const a=add(t[0],o),b=add(t[1],o),c=add(t[2],o);
@@ -1118,7 +1143,7 @@ const World=(()=>{
       const cen=mul(add(add(a,b),c),1/3);if(dot(n,sub(eye,cen))<0)n=mul(n,-1);
       const pa=proj(a),pb=proj(b),pc=proj(c);if(!pa||!pb||!pc)continue;
       if(Math.max(pa[0],pb[0],pc[0])<0||Math.min(pa[0],pb[0],pc[0])>W||Math.max(pa[1],pb[1],pc[1])<0||Math.min(pa[1],pb[1],pc[1])>H)continue;
-      const z=(pa[2]+pb[2]+pc[2])/3,sh=.6+.4*Math.max(0,dot(n,L)),fg=fogOn?Math.min(1,Math.max(0,(z-12)/55)):0;
+      const z=(pa[2]+pb[2]+pc[2])/3,sh=fogOn?.6+.4*Math.max(0,dot(n,L)):.94+.06*Math.max(0,dot(n,L)),fg=fogOn?Math.min(1,Math.max(0,(z-12)/55)):0;
       const col=t[3].map((cc,i)=>Math.round(cc*sh*(1-fg)+SKY1[i]*fg));
       polys.push([z,pa,pb,pc,`rgb(${col})`])}
     polys.sort((A,B)=>B[0]-A[0]);
@@ -1126,14 +1151,15 @@ const World=(()=>{
     for(const[,a,b,c,col]of polys){g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.lineTo(c[0],c[1]);g.closePath();g.fillStyle=col;g.strokeStyle=col;g.fill();g.stroke()}
     // 속도·거리 표시
     const sp=document.getElementById("spdV"),di=document.getElementById("distV");
-    if(sp)sp.textContent=(v*3.6).toFixed(1);if(di)di.textContent=(dist/1000).toFixed(2);
+    if(sp)sp.textContent=(v*3.6).toFixed(1);if(di)di.textContent=(dist/1000).toFixed(2);const gv=document.getElementById("gradeV");if(gv){gv.textContent=(grade*100).toFixed(1);gv.parentNode.className=grade>.015?"up":grade<-.015?"down":""}
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
   return {
     setRider(key,weight){kit=KITS[key]||KITS.me;if(weight)kg=weight},
     reset(){v=0;dist=0},
-    get speed(){return v},get distance(){return dist},
+    jump(d){dist=d},
+    get speed(){return v},get distance(){return dist},get grade(){return grade},
   };
 })();
 
