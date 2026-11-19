@@ -525,31 +525,36 @@ G.z2spr=(min,ns,F,hr=145)=>({name:`존2 ${min}분 + 15초 스프린트×${ns}`, 
   out.push({name:"존2", kind:"int", dur:body-ns*gap, lo:.60, hi:.75});out.push({name:"쿨다운", kind:"ramp", dur:300, from:.58, to:.45, capMode:true});return out}});
 G.rest=()=>({name:"휴식 (쉬는 날 · 타고 싶으면 회복 30분)", steps:()=>[{name:"가볍게 돌리기", kind:"rec", dur:1800, t:.5, cap:.58, say:"쉬는 날이에요. 아주 가볍게만."}]});
 
-// ---------- 생강차 100일 프로그램 (11/20~2/27 · FTP 280 → 300) ----------
+// 인터벌 뒤에 존2를 붙여 총 시간 맞추기
+G.fill=(wo,total,F,hr=145)=>{const st=wo.steps(),sum=st.reduce((a,x)=>a+x.dur,0),ex=Math.round((total*60-sum)/60);
+  if(ex<10)return wo;
+  return {name:`${wo.name} + 존2 ${ex}분`, steps:()=>{const t=wo.steps(),cd=t.pop();return [...t,{name:"존2 추가", kind:"int", dur:ex*60, lo:.60, hi:.75, say:`인터벌 끝. 이제 존2 ${ex}분. 심박 ${hr} 이하로 편하게.`+(total>=90?" 보급 잊지 마세요.":"")},cd]}}};
+const woMin=wo=>/^휴식/.test(wo.name)?0:wo.steps().reduce((a,x)=>a+x.dur,0)/60;
+
+// ---------- 생강차 100일 프로그램 (11/20~2/27 · FTP 280 → 300 · 주 15시간) ----------
 function myProgram(){
   const HR=145, start=new Date(2026,10,20), DAYS=["일","월","화","수","목","금","토"];
-  // 주별: [단계, FTP, 화(인터벌A), 수(존2 분), 목(인터벌B), 토(롱 존2 분), 일]
-  const z=m=>F=>G.z2(m,F,HR), rs=m=>F=>G.rec(m,F), sp=(m,n)=>F=>G.z2spr(m,n,F,HR);
+  // 주별: [단계, FTP, 화 인터벌, 화 총분, 수 존2분, 목 인터벌, 목 총분, 금 회복분, 토 롱분, 일 분, 일 스프린트수]
   const W=[
-    ["기초",280, F=>G.tempo(2,10,F),        75, F=>G.lowcad(3,6,.80,.88,F),  120, sp(90,4)],
-    ["기초",280, F=>G.tempo(2,15,F),        75, F=>G.sweet(2,10,F),          150, sp(90,5)],
-    ["기초",280, F=>G.sweet(2,15,F),        90, F=>G.lowcad(3,10,.80,.88,F), 180, sp(120,6)],
-    ["회복",280, z(60),                      45, F=>G.cad(F),                  120, F=>G.test(F)],
-    ["기초2",285,F=>G.sweet(3,12,F),        90, F=>G.thr(2,10,F),            180, sp(120,6)],
-    ["기초2",285,F=>G.sweet(2,20,F),        90, F=>G.thr(3,10,F),            210, sp(120,6)],
-    ["기초2",290,F=>G.sweet(3,15,F),        90, F=>G.thr(2,15,F),            210, sp(120,6)],
-    ["회복",290, z(60),                      45, F=>G.cad(F),                  120, F=>G.test(F)],
-    ["빌드",290, F=>G.thr(3,12,F),          90, F=>G.vo2(5,3,1.20,F),        180, sp(120,6)],
-    ["빌드",295, F=>G.thr(2,20,F),          90, F=>G.vo2(4,4,1.18,F),        210, sp(120,6)],
-    ["빌드",295, F=>G.ou(3,9,F),            90, F=>G.vo2(5,4,1.18,F),        180, sp(120,6)],
-    ["회복",295, z(60),                      45, F=>G.cad(F),                  120, F=>G.test(F)],
-    ["피크",300, F=>G.thr(3,15,F),          90, F=>G.vo2(4,5,1.15,F),        180, sp(90,6)],
-    ["피크",300, F=>G.ou(4,9,F),            75, F=>G.vo2(5,4,1.20,F),        150, sp(90,4)],
-    ["마무리",300, z(60),                    45, F=>G.vo2(3,1,1.20,F),        60,  F=>G.test(F)],
+    ["기초",280, F=>G.tempo(2,10,F),        90, 120, F=>G.lowcad(3,6,.80,.88,F),  90, 45, 210, 150, 4],
+    ["기초",280, F=>G.tempo(2,15,F),       105, 135, F=>G.sweet(2,10,F),         105, 60, 240, 165, 5],
+    ["기초",280, F=>G.sweet(2,15,F),       120, 150, F=>G.lowcad(3,10,.80,.88,F),120, 60, 270, 180, 6],
+    ["회복",280],
+    ["기초2",285,F=>G.sweet(3,12,F),       120, 150, F=>G.thr(2,10,F),           120, 60, 270, 180, 6],
+    ["기초2",285,F=>G.sweet(2,20,F),       120, 150, F=>G.thr(3,10,F),           120, 60, 270, 180, 6],
+    ["기초2",290,F=>G.sweet(3,15,F),       120, 150, F=>G.thr(2,15,F),           120, 60, 270, 180, 6],
+    ["회복",290],
+    ["빌드",290, F=>G.thr(3,12,F),         120, 150, F=>G.vo2(5,3,1.20,F),       120, 60, 270, 180, 6],
+    ["빌드",295, F=>G.thr(2,20,F),         120, 150, F=>G.vo2(4,4,1.18,F),       120, 60, 270, 180, 6],
+    ["빌드",295, F=>G.ou(3,9,F),           120, 150, F=>G.vo2(5,4,1.18,F),       120, 60, 270, 180, 6],
+    ["회복",295],
+    ["피크",300, F=>G.thr(3,15,F),         120, 150, F=>G.vo2(4,5,1.15,F),       120, 60, 240, 180, 6],
+    ["테이퍼",300,F=>G.ou(3,9,F),           90,  75, F=>G.vo2(3,1,1.20,F),        45, 60, 180, 120, 4],
+    ["마무리",300],
   ];
   const weeks=[];
   for(let wk=0;wk<W.length;wk++){
-    const [ph,F,iA,wedMin,iB,longMin,sun]=W[wk],rec=ph==="회복",o={};
+    const [ph,F,iA,tue,wed,iB,thu,fri,sat,sun,ns]=W[wk],rec=ph==="회복",o={};let tot=0;
     for(let d=0;d<7;d++){
       const n=wk*7+d;if(n>=100)break;
       const dt=new Date(start.getTime()+n*864e5),dow=dt.getDay(),key="d"+dt.getFullYear()+"-"+(dt.getMonth()+1)+"-"+dt.getDate();
@@ -557,18 +562,20 @@ function myProgram(){
       if(n===97)wo=G.vo2(3,1,1.20,F);             // 98일째: 오프너 (1분×3)
       else if(n===98)wo=G.rest();                 // 99일째: 휴식
       else if(n===99)wo=G.test(F);                // 100일째: 20분 FTP 테스트 (목표 300W → 20분 평균 316W)
-      else if(rec){wo=[G.rec(40,F),G.z2(90,F,HR),G.rec(60,F),G.rest(),G.cad(F),G.rec(45,F),G.test(F)][[2,3,4,5,6,0,1][dow]]}   // 회복 주: 금·토·일·월·화·수 가볍게 → 목요일 테스트
-      else if(dow===1||dow===5)wo=G.rest();
-      else if(dow===2)wo=iA(F);
-      else if(dow===3)wo=rec?G.rec(wedMin,F):G.z2(wedMin,F,HR);
-      else if(dow===4)wo=iB(F);
-      else if(dow===6)wo=G.z2(longMin,F,HR);
-      else wo=sun(F);
+      else if(rec){wo=[G.rec(60,F),G.z2(180,F,HR),G.z2(120,F,HR),G.rest(),G.fill(G.cad(F),75,F,HR),G.rec(60,F),G.test(F)][[2,3,4,5,6,0,1][dow]]}   // 회복 주(약 9시간): 목요일 테스트
+      else if(dow===1)wo=G.rest();
+      else if(dow===2)wo=G.fill(iA(F),tue,F,HR);
+      else if(dow===3)wo=G.z2(wed,F,HR);
+      else if(dow===4)wo=G.fill(iB(F),thu,F,HR);
+      else if(dow===5)wo=G.rec(fri,F);
+      else if(dow===6)wo=G.z2(sat,F,HR);
+      else wo=G.z2spr(sun,ns,F,HR);
+      tot+=woMin(wo);
       wo.name=`${dt.getMonth()+1}/${dt.getDate()} ${DAYS[dow]} · D${n+1} · `+wo.name;
       o[key]=wo;
     }
     const a=new Date(start.getTime()+wk*7*864e5),b=new Date(start.getTime()+Math.min(wk*7+6,99)*864e5);
-    weeks.push({label:`${wk+1}주차 · FTP ${F} · ${ph} (${a.getMonth()+1}/${a.getDate()}~${b.getMonth()+1}/${b.getDate()})`,ftp:F,workouts:o});
+    weeks.push({label:`${wk+1}주차 · FTP ${F} · ${ph} · ${(tot/60).toFixed(1)}시간 (${a.getMonth()+1}/${a.getDate()}~${b.getMonth()+1}/${b.getDate()})`,ftp:F,workouts:o});
   }
   return {name:"생강차 (나)",kg:61,start,weeks};
 }
