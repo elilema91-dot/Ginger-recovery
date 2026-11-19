@@ -77,11 +77,6 @@
   .arena small{font-size:12px;opacity:.8}
   .arena{position:relative;overflow:hidden;border-style:solid}
   #mini{display:none}
-  #rv{display:none;position:absolute;left:12px;bottom:12px;width:min(46%,360px);height:min(34%,230px);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.25);z-index:3;background:#111;box-shadow:0 8px 30px rgba(0,0,0,.45)}
-  #rv.show{display:block}
-  #rvView{position:absolute;inset:0}
-  #rvMsg{position:absolute;left:8px;top:6px;font-size:11px;font-weight:700;background:rgba(0,0,0,.55);padding:2px 8px;border-radius:999px;z-index:2;pointer-events:none}
-  #rvX{position:absolute;right:6px;top:6px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:13px;z-index:2;cursor:pointer}
   #world{position:absolute;inset:0;width:100%;height:100%;display:block;margin:0;border:none;border-radius:inherit;background:transparent}
   .spd{display:flex;justify-content:center;gap:18px;margin-top:6px;font-size:13px;color:var(--muted)}
   .spd b{font-family:var(--mono);font-size:20px;color:var(--text);font-weight:800}
@@ -204,7 +199,6 @@
     .next{font-size:13px}
     .side>.row{right:12px;width:24%;gap:6px}
     #rowNP{display:none}
-    #rv{left:12px;bottom:calc(14vh + 8px);width:26%;height:26vh}
     #mini{display:block;position:absolute;right:12px;top:calc(12px + 9vh + 8px);width:24%;height:24vh;border-radius:12px;border:1px solid rgba(255,255,255,.14);z-index:2;margin:0}
     .side>.row{top:12px}
     .side .stat{background:rgba(8,10,16,.6);border-color:rgba(255,255,255,.14);backdrop-filter:blur(8px);padding:5px 4px;height:9vh;display:flex;flex-direction:column;justify-content:center}
@@ -297,7 +291,6 @@
       <button class="btn primary" id="btnPower">🔗 파워미터/트레이너 연결</button>
       <button class="btn" id="btnHr">❤️ 심박계 연결</button>
       <label class="chk">코스 <select id="courseSel"><option value="">가상 언덕길</option><option value="mangyeong">만경강 메디오폰도 (11/14 · 62km)</option></select></label>
-      <label class="chk"><input type="checkbox" id="rvOn"> 로드뷰 창</label>
       <label class="chk">트레이너 저항 <select id="resMode" disabled><option value="off">끔</option><option value="erg">ERG · 목표 와트 고정</option><option value="sim" selected>코스 경사 따라 (SIM)</option></select></label>
       <label class="chk" id="simLbl" style="display:none"><input type="checkbox" id="simOn"> 테스트 모드</label>
       <label class="chk"><input type="checkbox" id="voiceOn" checked> 음성 안내</label>
@@ -336,7 +329,7 @@
         <div class="zbar" id="zbar"></div>
         <div class="zlegend"><span>회색 Z1</span><span style="color:#60a5fa">파랑 Z2</span><span style="color:#4ade80">초록 Z3</span><span style="color:#facc15">노랑 Z4</span><span style="color:#fb923c">주황 Z5</span><span style="color:#f87171">빨강 Z6</span></div>
       </div>
-      <div class="arena" id="arena"><canvas id="world"></canvas><canvas id="mini"></canvas><div id="rv"><div id="rvView"></div><div id="rvMsg">로드뷰</div><button id="rvX" aria-label="로드뷰 닫기">✕</button></div></div>
+      <div class="arena" id="arena"><canvas id="world"></canvas><canvas id="mini"></canvas></div>
     </div>
     <div class="side">
       <div class="card">
@@ -1348,35 +1341,6 @@ const World=(()=>{
     get speed(){return v},get distance(){return dist},get grade(){return grade},get course(){return course},get _sc(){return SC},
   };
 })();
-
-// ---------- 카카오 로드뷰 창 (코스 위 현재 위치의 실제 로드뷰를 몇 초마다 보여줌) ----------
-const KAKAO_KEY="";   // 카카오 디벨로퍼스 JavaScript 키 (도메인 elilema91-dot.github.io 등록 필요)
-const RV={on:false,ready:false,view:null,client:null,lastAt:0,lastPos:null,lastPano:null,timer:null};
-function rvKey(){try{return KAKAO_KEY||localStorage.getItem("pc_kakao_key")||""}catch(e){return KAKAO_KEY}}
-function rvLoad(){return new Promise((ok,no)=>{if(window.kakao&&kakao.maps&&kakao.maps.Roadview)return ok();
-  const s=document.createElement("script");s.src="https://dapi.kakao.com/v2/maps/sdk.js?autoload=false&appkey="+encodeURIComponent(rvKey());
-  s.onload=()=>{try{kakao.maps.load(ok)}catch(e){no(e)}};s.onerror=()=>no(new Error("sdk"));document.head.appendChild(s)})}
-async function rvStart(){
-  if(!rvKey()){const k=prompt("카카오 JavaScript 키를 붙여넣어 주세요 (한 번만 넣으면 이 기기에 저장돼요)");if(!k){$("rvOn").checked=false;return}try{localStorage.setItem("pc_kakao_key",k.trim())}catch(e){}}
-  if(!World.course){toast("로드뷰는 실제 코스(만경강 등)를 골랐을 때만 볼 수 있어요");$("rvOn").checked=false;return}
-  $("rv").classList.add("show");$("rvMsg").textContent="로드뷰 불러오는 중…";RV.on=true;
-  try{await rvLoad()}catch(e){$("rvMsg").textContent="카카오 지도 키를 확인해 주세요";return}
-  if(!RV.view){RV.view=new kakao.maps.Roadview($("rvView"));RV.client=new kakao.maps.RoadviewClient();
-    kakao.maps.event.addListener(RV.view,"init",()=>{RV.ready=true;rvFace()});kakao.maps.event.addListener(RV.view,"panoid_changed",()=>{RV.ready=true;setTimeout(rvFace,200)})}
-  RV.lastPos=null;rvTick();clearInterval(RV.timer);RV.timer=setInterval(rvTick,2500);
-}
-function rvStop(){RV.on=false;clearInterval(RV.timer);$("rv").classList.remove("show");$("rvOn").checked=false}
-function rvFace(){const p=World.posLatLng();if(p&&RV.view&&RV.ready){try{RV.view.setViewpoint({pan:p.heading,tilt:0,zoom:0})}catch(e){}}}
-function rvTick(){
-  if(!RV.on||!RV.client)return;const p=World.posLatLng();if(!p)return;
-  if(RV.lastPos){const dy=(p.lat-RV.lastPos.lat)*110540,dx=(p.lng-RV.lastPos.lng)*111320*Math.cos(p.lat*Math.PI/180);if(Math.hypot(dx,dy)<20){rvFace();return}}
-  RV.lastPos=p;const ll=new kakao.maps.LatLng(p.lat,p.lng);
-  RV.client.getNearestPanoId(ll,60,id=>{if(!id){$("rvMsg").textContent="이 지점은 로드뷰가 없어요";return}
-    $("rvMsg").textContent="로드뷰 · "+(World.distance/1000).toFixed(2)+"km";
-    if(id!==RV.lastPano){RV.lastPano=id;RV.ready=false;RV.view.setPanoId(id,ll)}else rvFace()});
-}
-$("rvOn").onchange=()=>$("rvOn").checked?rvStart():rvStop();
-$("rvX").onclick=rvStop;
 
 // ---------- 초기화 ----------
 function fillSel(sel,items){sel.innerHTML="";items.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;o.textContent=label;sel.appendChild(o)})}
