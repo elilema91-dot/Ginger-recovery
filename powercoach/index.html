@@ -1136,9 +1136,15 @@ const World=(()=>{
     const poly=(pts,col)=>{const q=pts.map(proj);if(q.some(x=>!x))return;g.beginPath();g.moveTo(q[0][0],q[0][1]);for(const p of q.slice(1))g.lineTo(p[0],p[1]);g.closePath();g.fillStyle=col;g.strokeStyle=col;g.lineWidth=1;g.fill();g.stroke()};
     const fogc=(c,z)=>{const fg=Math.min(1,Math.max(0,(z-12)/80));return `rgb(${c.map((cc,i)=>Math.round(cc*(1-fg)+SKY1[i]*fg))})`};
     const s0=rx-4.6+.4,SEG=[];for(let s=s0;s<rx+160;){const st=s-rx<20?1.5:s-rx<60?3:6;SEG.push([s,Math.min(s+st,rx+160)]);s+=st}
+    const landAt=(sv,side)=>{if(!SC||!course)return "";const i=Math.round(wrapS(sv)/course.step);return (side<0?SC.landL:SC.landR)[i]||""};
+    const LANDC={farmland:[[204,182,122],[188,168,112]],meadow:[[170,214,140],[160,204,132]],forest:[[110,170,110],[104,162,104]],residential:[[200,212,190],[192,204,182]],orchard:[[160,200,120],[150,190,112]],greenhouse:[[214,220,206],[204,210,196]]};
     for(let k=SEG.length-1;k>=0;k--){const A=frameAt(SEG[k][0]),B=frameAt(SEG[k][1]),z=Math.hypot(A.p[0]-eye[0],A.p[2]-eye[2]),gg=(B.p[1]-A.p[1])/(SEG[k][1]-SEG[k][0]),lit=Math.max(.85,Math.min(1.12,1+gg*3));
       const gc=GR0.map(c=>Math.min(255,c*lit)),gc2=GR1.map(c=>Math.min(255,c*lit));
-      for(const[za,zb,cc]of[[1.05,8,gc],[8,40,gc],[40,220,gc2],[-8,-1.05,gc],[-40,-8,gc],[-220,-40,gc2]])poly([pt(A,za),pt(A,zb),pt(B,zb),pt(B,za)],fogc(cc,z));
+      for(const[za,zb,cc]of[[1.05,8,gc],[8,40,gc],[40,220,gc2],[-8,-1.05,gc],[-40,-8,gc],[-220,-40,gc2]]){let c2=cc;const lt=Math.abs(za)<40?landAt(SEG[k][0],Math.sign(za)):"";
+        if(lt&&LANDC[lt]){const alt=(Math.floor(SEG[k][0]/18)+(Math.abs(za)>8?1:0))%2;c2=LANDC[lt][alt].map(c=>Math.min(255,c*lit))}
+        poly([pt(A,za),pt(A,zb),pt(B,zb),pt(B,za)],fogc(c2,z))}}
+    if(SC){const fl=nearC(SC.flat,eye[0],eye[2],1).map(it=>[Math.hypot(it.x-eye[0],it.z-eye[2]),it]).filter(a=>a[0]<190&&Math.abs(a[1].poly[0][1]-hb)<8+a[0]*.12).sort((a,b)=>b[0]-a[0]);for(const[dd,it]of fl)poly(it.poly,fogc(it.col,dd))}
+    for(let k=SEG.length-1;k>=0;k--){const A=frameAt(SEG[k][0]),B=frameAt(SEG[k][1]),z=Math.hypot(A.p[0]-eye[0],A.p[2]-eye[2]);
       poly([pt(A,-1.05,.001),pt(A,1.05,.001),pt(B,1.05,.001),pt(B,-1.05,.001)],fogc([214,208,202],z));
       poly([pt(A,-1.05,.002),pt(A,-.95,.002),pt(B,-.95,.002),pt(B,-1.05,.002)],fogc([245,245,245],z));
       poly([pt(A,.95,.002),pt(A,1.05,.002),pt(B,1.05,.002),pt(B,.95,.002)],fogc([245,245,245],z))}
@@ -1150,10 +1156,15 @@ const World=(()=>{
     for(let k=0;k<3;k++){const dd=70+k*18,lat=-35+k*30+((rx*.01+k*13)%20);push(CLOUD,[eye[0]+fl[0]*dd-fl[2]*lat,eye[1]+9+k*1.5,eye[2]+fl[2]*dd+fl[0]*lat],false)}
     const T0=Math.floor((rx-6)/2.5),T1=Math.floor((rx+70)/2.5);
     for(let i=T0;i<=T1;i++){const s=i*2.5;
-      for(const side of[-1,1]){const h=hash(i*2+(side>0?1:0));if(h<.35)continue;
-        const kind=h>.97?8:h>.9?6:h>.82?7:h>.6?Math.floor(hash(i+7)*3):3+Math.floor(hash(i+9)*3);
-        const lat=side*(kind===6||kind===7?1.35+hash(i+3)*.6:kind===8?4+hash(i)*3:1.8+hash(i+5)*5);
+      for(const side of[-1,1]){const h=hash(i*2+(side>0?1:0)),lt=landAt(s,side);
+        if(lt==="farmland"||lt==="greenhouse"){if(h<.93)continue}else if(lt==="forest"){if(h<.12)continue}else if(lt==="residential"&&SC&&SC.hasBld){if(h<.8)continue}else if(h<.35)continue;
+        let kind=h>.97?8:h>.9?6:h>.82?7:h>.6?Math.floor(hash(i+7)*3):3+Math.floor(hash(i+9)*3);
+        if(lt==="forest")kind=h>.95?6:Math.floor(hash(i+7)*3);if(lt==="orchard")kind=3+Math.floor(hash(i+9)*3);
+        if(kind===8&&SC&&SC.hasBld)kind=6;
+        const lat=side*(kind===6||kind===7?1.35+hash(i+3)*.6:kind===8?4+hash(i)*3:1.8+hash(i+5)*(lt==="forest"?3:5));
         const F=frameAt(s+hash(i+1)*2);push(PROPS[kind],pt(F,lat,-.02))}}
+    const LABELS=[];
+    if(SC){for(const it of nearC(SC.objs,eye[0],eye[2],1)){const dd=Math.hypot(it.x-eye[0],it.z-eye[2]);if(dd>130)continue;if(it.y!=null&&Math.abs(it.y-hb)>6+dd*.12)continue;if(it.mesh)push(it.mesh,[0,0,0]);if(it.label&&dd<75)LABELS.push(it)}}
     push(yawPitch(rider(crank,wheel,0),R0.t,Math.atan(grade)),[R0.p[0],hb+sway,R0.p[2]]);
     // 투영·정렬
     const polys=[];
@@ -1168,11 +1179,106 @@ const World=(()=>{
     polys.sort((A,B)=>B[0]-A[0]);
     g.lineJoin="round";g.lineWidth=.6;
     for(const[,a,b,c,col]of polys){g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.lineTo(c[0],c[1]);g.closePath();g.fillStyle=col;g.strokeStyle=col;g.fill();g.stroke()}
+    for(const it of LABELS){const q=proj([it.x,it.ly,it.z]);if(!q||q[2]<1.5)continue;const fs=Math.max(10*dpr,Math.min(30*dpr,foc*.55/q[2]));g.font=`700 ${fs}px "Noto Sans KR",sans-serif`;
+      const tw=g.measureText(it.label).width,al=Math.max(0,Math.min(1,(75-q[2])/25));g.globalAlpha=al;g.fillStyle="rgba(15,20,30,.72)";const px=fs*.45;
+      g.beginPath();g.roundRect?g.roundRect(q[0]-tw/2-px,q[1]-fs*1.25,tw+px*2,fs*1.5,fs*.35):g.rect(q[0]-tw/2-px,q[1]-fs*1.25,tw+px*2,fs*1.5);g.fill();
+      g.fillStyle="#fff";g.textAlign="center";g.fillText(it.label,q[0],q[1]-fs*.12);g.globalAlpha=1}
     // 속도·거리·경사 표시
     const sp=document.getElementById("spdV"),di=document.getElementById("distV");
     if(sp)sp.textContent=(v*3.6).toFixed(1);if(di)di.textContent=(dist/1000).toFixed(2);const gv=document.getElementById("gradeV");if(gv){gv.textContent=(grade*100).toFixed(1);gv.parentNode.className=grade>.015?"up":grade<-.015?"down":""}
     if(now-(frame._mini||0)>400){frame._mini=now;drawMini()}
     requestAnimationFrame(frame);
+  }
+  // ---- 실제 지도 요소(OSM) + 코스 표지물(출발 아치·km 표지·오르막 배너) ----
+  let SC=null;
+  const CELL=100,ck=(x,z)=>Math.floor(x/CELL)+","+Math.floor(z/CELL);
+  function addCell(map,x,z,it){const k=ck(x,z);let a=map.get(k);if(!a)map.set(k,a=[]);a.push(it)}
+  function nearC(map,x,z,r=1){const cx=Math.floor(x/CELL),cz=Math.floor(z/CELL),o=[];for(let i=-r;i<=r;i++)for(let j=-r;j<=r;j++){const a=map.get((cx+i)+","+(cz+j));if(a)for(const it of a)o.push(it)}return o}
+  function newScene(){
+    const RG=new Map();for(let i=0;i<course.x.length;i++)addCell(RG,course.x[i],course.z[i],i);
+    return {objs:new Map(),flat:new Map(),RG,landL:new Array(course.x.length).fill(""),landR:new Array(course.x.length).fill(""),hasBld:false,osm:false};
+  }
+  function nearestRoute(x,z){let best=-1,bd=1e18;for(const i of nearC(SC.RG,x,z,1)){const d=(course.x[i]-x)**2+(course.z[i]-z)**2;if(d<bd){bd=d;best=i}}
+    if(best<0)for(let i=0;i<course.x.length;i+=3){const d=(course.x[i]-x)**2+(course.z[i]-z)**2;if(d<bd){bd=d;best=i}}
+    const t=tanAt(best*course.step),side=Math.sign(t[0]*(z-course.z[best])-t[1]*(x-course.x[best]))||1;
+    return {i:best,d:Math.sqrt(bd),y:course.y[best],side}}
+  function xfT(m,T){for(const q of m){q[0]=T(q[0]);q[1]=T(q[1]);q[2]=T(q[2])}return m}
+  function place(m,cx,cy,cz,yaw){const c=Math.cos(yaw),s=Math.sin(yaw);return xfT(m,p=>[cx+p[0]*c-p[2]*s,cy+p[1],cz+p[0]*s+p[2]*c])}
+  const WALLS=[[255,244,230],[245,238,225],[236,240,245],[255,236,214]],ROOFS=[[230,110,90],[90,130,190],[110,170,140],[180,120,90],[200,90,110]];
+  function houseMesh(w,d,h,flat,wall,roof){const m=M();box(m,[0,h/2,0],[w,h,d],wall);
+    if(flat){box(m,[0,h+.15,0],[w+.2,.3,d+.2],[200,200,205])}
+    else{const rh=Math.min(3,w*.28),hw=w/2+.3,hd=d/2+.3,R1=[-hw,h+rh,0],R2=[hw,h+rh,0];
+      tri(m,[-hw,h,-hd],[hw,h,-hd],R2,roof);tri(m,[-hw,h,-hd],R2,R1,roof);tri(m,[-hw,h,hd],[hw,h,hd],R2,roof);tri(m,[-hw,h,hd],R2,R1,roof);tri(m,[-hw,h,-hd],[-hw,h,hd],R1,wall);tri(m,[hw,h,-hd],[hw,h,hd],R2,wall)}
+    box(m,[w/2+.01,.9,0],[.02,1.8,Math.min(1.2,d*.3)],[150,105,80]);return m}
+  function greenhouseMesh(len,wid){const m=M(),n=6,r=wid/2,col=[232,238,242],col2=[210,220,228];
+    for(let k=0;k<n;k++){const a0=k/n*Math.PI,a1=(k+1)/n*Math.PI,p=a=>[Math.cos(a)*r,Math.sin(a)*r*0.9];const A=p(a0),B=p(a1),c=k%2?col:col2;
+      tri(m,[-len/2,A[1],A[0]],[len/2,A[1],A[0]],[len/2,B[1],B[0]],c);tri(m,[-len/2,A[1],A[0]],[len/2,B[1],B[0]],[-len/2,B[1],B[0]],c)}
+    return m}
+  function archMesh(col){const m=M();for(const s of[-1,1])cyl(m,[0,0,1.7*s],[0,3.2,1.7*s],.09,[245,245,245],6);box(m,[0,3.3,0],[.25,.7,3.8],col);return m}
+  function postMesh(){const m=M();cyl(m,[0,0,0],[0,1.0,0],.04,[245,245,245],5);box(m,[0,1.1,0],[.06,.35,.5],[40,120,90]);return m}
+  function signalMesh(){const m=M();cyl(m,[0,0,0],[0,3.2,0],.07,[90,95,105],6);cyl(m,[0,3.1,0],[0,3.1,-2.2],.05,[90,95,105],5);box(m,[0,3.0,-2.0],[.3,.3,1.0],[40,40,45]);
+    ico(m,[.16,3.0,-2.3],.09,[240,70,60],0);ico(m,[.16,3.0,-2.0],.09,[255,190,60],0);ico(m,[.16,3.0,-1.7],.09,[80,210,120],0);return m}
+  function busMesh(){const m=M();box(m,[0,1.25,0],[1.2,.08,3],[90,130,190]);for(const z of[-1.4,1.4])cyl(m,[-.5,0,z],[-.5,1.25,z],.04,[180,185,195],5);box(m,[-.55,.7,0],[.05,1.0,2.8],[200,225,240]);box(m,[.2,2.1,-1.6],[.05,.4,.6],[40,110,200]);cyl(m,[.2,0,-1.6],[.2,1.9,-1.6],.03,[180,185,195],4);return m}
+  function railMeshAt(i){const m=M(),s=i*course.step,A=frameAt(s),B=frameAt(s+course.step);
+    for(const side of[-1,1]){const a=pt(A,1.35*side,.85),b=pt(B,1.35*side,.85);cyl(m,a,b,.05,[235,235,240],4);const p0=pt(A,1.35*side,0);cyl(m,p0,a,.04,[200,205,210],4)}
+    return m}
+  function addObj(mesh,x,z,label,ly){let y=ly;if(y==null&&mesh&&mesh.length){y=1e9;for(const t of mesh)y=Math.min(y,t[0][1],t[1][1],t[2][1])}addCell(SC.objs,x,z,{mesh,x,z,label,ly,y})}
+  function addLabelOnly(x,y,z,label){addCell(SC.objs,x,z,{mesh:null,x,z,label,ly:y})}
+  function courseMarkers(){
+    const L=course.length;
+    // 출발 아치
+    {const F=frameAt(0),yaw=Math.atan2(F.t[1],F.t[0]);addObj(place(archMesh([255,122,110]),F.p[0],F.p[1],F.p[2],-yaw),F.p[0],F.p[2],"출발 · 도착",F.p[1]+3.3)}
+    // km 표지
+    for(let k=1000;k<L-200;k+=1000){const F=frameAt(k),q=pt(F,1.6),yaw=Math.atan2(F.t[1],F.t[0]);addObj(place(postMesh(),q[0],q[1],q[2],-yaw),q[0],q[2],(k/1000)+" km",q[1]+1.5)}
+    // 오르막 배너
+    const st=course.step,Y=course.y;let i=0;
+    while(i<Y.length-1){if((Y[i+1]-Y[i])/st>.025){let j=i;while(j<Y.length-1&&(Y[j+1]-Y[j])/st>-.005)j++;const gain=Y[j]-Y[i],len=(j-i)*st;
+        if(gain>=35&&len>=300){const avg=gain/len*100;for(const[s,lab,col]of[[i*st,`오르막 ${ (len/1000).toFixed(1)}km · 평균 ${avg.toFixed(1)}%`,[251,146,60]],[j*st,`정상 · +${Math.round(gain)}m`,[96,165,250]]]){
+          const F=frameAt(s),yaw=Math.atan2(F.t[1],F.t[0]);addObj(place(archMesh(col),F.p[0],F.p[1],F.p[2],-yaw),F.p[0],F.p[2],lab,F.p[1]+3.3)}}
+        i=j+1}else i++}
+  }
+  function inPoly(x,z,P){let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const a=P[i],b=P[j];if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])c=!c}return c}
+  function applyOSM(osm){
+    if(!course||!osm||!osm.elements)return {};
+    const kx=111320*Math.cos(course.lat0*Math.PI/180),ky=110540,XY=(la,lo)=>[(lo-course.lng0)*kx,-(la-course.lat0)*ky];
+    const cnt={building:0,water:0,place:0,poi:0,land:0,bridge:0};const lands=[];
+    for(const e of osm.elements){const t=e.tags||{};
+      const G=e.geometry?e.geometry.map(p=>XY(p.lat,p.lon)):null;
+      if(e.type==="way"&&G&&G.length>1){
+        if(t.building){let cx=0,cz=0;for(const p of G){cx+=p[0];cz+=p[1]}cx/=G.length;cz/=G.length;
+          let best=0,yaw=0;for(let k=0;k<G.length-1;k++){const dx=G[k+1][0]-G[k][0],dz=G[k+1][1]-G[k][1],l=Math.hypot(dx,dz);if(l>best){best=l;yaw=Math.atan2(dz,dx)}}
+          const c=Math.cos(-yaw),s=Math.sin(-yaw);let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const p of G){const X=(p[0]-cx)*c-(p[1]-cz)*s,Z=(p[0]-cx)*s+(p[1]-cz)*c;x0=Math.min(x0,X);x1=Math.max(x1,X);z0=Math.min(z0,Z);z1=Math.max(z1,Z)}
+          const w=Math.max(3,Math.min(40,x1-x0)),d=Math.max(3,Math.min(40,z1-z0)),nr=nearestRoute(cx,cz);if(nr.d<Math.min(w,d)/2+1.4||nr.d>130)continue;
+          const lv=+(t["building:levels"]||0),h=lv?lv*3:(t.building==="apartments"?15:w*d>250?6:3.6),greenh=t.building==="greenhouse";
+          const hsh=Math.abs(Math.round(cx*7+cz*13));
+          const mesh=greenh?greenhouseMesh(Math.max(w,d),Math.min(w,d,8)):houseMesh(w,d,h,lv>=3||w*d>300,WALLS[hsh%4],ROOFS[hsh%5]);
+          addObj(place(mesh,cx,nr.y-.05,cz,yaw+(greenh&&d>w?Math.PI/2:0)),cx,cz);cnt.building++;SC.hasBld=true;continue}
+        if(t.waterway||t.natural==="water"){const wdt=t.natural==="water"?0:(+t.width||(t.waterway==="river"?24:t.waterway==="canal"?6:3));
+          if(t.natural==="water"&&G.length>3){const nr=nearestRoute(G[0][0],G[0][1]);addCell(SC.flat,G[0][0],G[0][1],{poly:G.map(p=>[p[0],nr.y-.25,p[1]]),col:[120,180,230],x:G[0][0],z:G[0][1]});cnt.water++;continue}
+          const GG=[];for(let k=0;k<G.length-1;k++){const a=G[k],b=G[k+1],l=Math.hypot(b[0]-a[0],b[1]-a[1]),n=Math.max(1,Math.ceil(l/8));for(let q=0;q<n;q++)GG.push([a[0]+(b[0]-a[0])*q/n,a[1]+(b[1]-a[1])*q/n]);}GG.push(G[G.length-1]);
+          for(let k=0;k<GG.length-1;k++){const a=GG[k],b=GG[k+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz)||1,nx=-dz/l*wdt/2,nz=dx/l*wdt/2,mx=(a[0]+b[0])/2,mz=(a[1]+b[1])/2,nr=nearestRoute(mx,mz);
+            if(nr.d>350)continue;const y=nr.y-(nr.d<15?2.5:.3);
+            addCell(SC.flat,mx,mz,{poly:[[a[0]+nx,y,a[1]+nz],[b[0]+nx,y,b[1]+nz],[b[0]-nx,y,b[1]-nz],[a[0]-nx,y,a[1]-nz]],col:[110,175,230],x:mx,z:mz})}
+          cnt.water++;continue}
+        if(t.bridge==="yes"&&t.highway){for(const p of G){const nr=nearestRoute(p[0],p[1]);if(nr.d<6){SC.bridgeSet=SC.bridgeSet||new Set();for(let q=nr.i-1;q<=nr.i+1;q++)SC.bridgeSet.add(q)}}cnt.bridge++;continue}
+        const lt=t.landuse||t.natural;if(lt&&G.length>3){let x0=1e9,x1=-1e9,z0=1e9,z1=-1e9;for(const p of G){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[1]);z1=Math.max(z1,p[1])}
+          lands.push({t:lt==="wood"?"forest":lt==="scrub"?"meadow":lt==="greenhouse_horticulture"?"greenhouse":lt,P:G,x0,x1,z0,z1});cnt.land++;continue}
+      }
+      if(e.type==="node"){const [x,z]=XY(e.lat,e.lon),nr=nearestRoute(x,z);
+        if(t.place){if(!t.name)continue;const i=Math.max(0,Math.min(course.x.length-1,nr.i)),F=frameAt(i*course.step),q=pt(F,2.4*nr.side),yaw=Math.atan2(F.t[1],F.t[0]);
+          const m=M();for(const s of[-.7,.7])cyl(m,[0,0,s],[0,1.6,s],.05,[200,200,205],5);box(m,[0,1.75,0],[.08,.55,1.8],[40,110,200]);addObj(place(m,q[0],q[1],q[2],-yaw),q[0],q[2],t.name,q[1]+1.75);cnt.place++;continue}
+        const F=frameAt(nr.i*course.step),yaw=Math.atan2(F.t[1],F.t[0]);
+        if(t.highway==="traffic_signals"){const q=pt(F,1.6*nr.side);addObj(place(signalMesh(),q[0],q[1],q[2],-yaw+(nr.side<0?Math.PI:0)),q[0],q[2]);cnt.poi++;continue}
+        if(t.highway==="bus_stop"){const q=pt(F,2.0*nr.side);addObj(place(busMesh(),q[0],q[1],q[2],-yaw+(nr.side>0?Math.PI:0)),q[0],q[2],t.name?("🚌 "+t.name):"🚌 버스정류장",q[1]+2.4);cnt.poi++;continue}
+        if(t.amenity||t.shop){if(nr.d<4)continue;const nm=t.name||({convenience:"편의점",cafe:"카페",place_of_worship:"교회",fuel:"주유소",school:"학교",restaurant:"식당",toilets:"화장실"}[t.amenity||t.shop]||"");
+          const hsh=Math.abs(Math.round(x*3+z*5)),mesh=houseMesh(6,5,3.4,true,[255,250,240],ROOFS[hsh%5]);box(mesh,[3.02,2.7,0],[.06,.7,3.6],ROOFS[(hsh+2)%5]);
+          addObj(place(mesh,x,nr.y-.05,z,yaw+(nr.side>0?Math.PI:0)),x,z,nm,nr.y+3.6);cnt.poi++;continue}
+      }
+    }
+    // 길 양옆 땅 종류 (15m 옆 지점이 어느 땅에 있는지)
+    if(lands.length){for(let i=0;i<course.x.length;i++){const F=frameAt(i*course.step);for(const side of[-1,1]){const q=pt(F,15*side);let typ="";for(const l of lands){if(q[0]<l.x0||q[0]>l.x1||q[2]<l.z0||q[2]>l.z1)continue;if(inPoly(q[0],q[2],l.P)){typ=l.t;break}}(side<0?SC.landL:SC.landR)[i]=typ}}}
+    if(SC.bridgeSet)for(const i of SC.bridgeSet){if(i<0||i>=course.x.length-1)continue;const p=raw(i*course.step);addObj(railMeshAt(i),p[0],p[2])}
+    SC.osm=true;return cnt;
   }
   // ---- 미니맵 (코스 모양 + 고도 그래프) ----
   function drawMini(){
@@ -1197,14 +1303,19 @@ const World=(()=>{
     m.fillStyle="#fff";m.font=`600 ${11*dpr}px sans-serif`;m.textAlign="left";
     const left=course?Math.max(0,course.length-dist)/1000:null;
     m.fillText(course?`${course.name} · 남은 ${left.toFixed(1)}km`:"고도 (앞뒤 2km)",6*dpr,mapH+13*dpr);
+    if(SC&&SC.osm){m.font=`${9*dpr}px sans-serif`;m.textAlign="right";m.fillStyle="rgba(255,255,255,.75)";m.fillText("© OpenStreetMap",w-4*dpr,mapH-4*dpr)}
   }
   requestAnimationFrame(frame);
   return {
     setRider(key,weight){kit=KITS[key]||KITS.me;if(weight)kg=weight},
-    setCourse(c){if(c){const n=c.x.length-1;c.loop=Math.hypot(c.x[0]-c.x[n],c.z[0]-c.z[n])<60;c.length=n*c.step}course=c||null;dist=0;v=0;drawMini()},
+    setCourse(c){if(c){let n=c.x.length-1;const gap=Math.hypot(c.x[0]-c.x[n],c.z[0]-c.z[n]);c.loop=gap<80;
+      if(c.loop&&gap>1){const k=Math.max(1,Math.round(gap/c.step)),x0=c.x[n],z0=c.z[n],y0=c.y[n];for(let q=1;q<=k;q++){const t=q/k;c.x.push(x0+(c.x[0]-x0)*t);c.z.push(z0+(c.z[0]-z0)*t);c.y.push(y0+(c.y[0]-y0)*t)}n=c.x.length-1}
+      c.length=n*c.step}course=c||null;dist=0;v=0;SC=null;if(course){SC=newScene();courseMarkers()}drawMini()},
+    setScenery(osm){if(!course)return {};return applyOSM(osm)},
+    routeLatLng(every=15){if(!course)return [];const kx=111320*Math.cos(course.lat0*Math.PI/180),ky=110540,o=[];for(let i=0;i<course.x.length;i+=every)o.push([+(course.lat0-course.z[i]/ky).toFixed(5),+(course.lng0+course.x[i]/kx).toFixed(5)]);return o},
     reset(){v=0;dist=0},
     jump(d){dist=d},
-    get speed(){return v},get distance(){return dist},get grade(){return grade},get course(){return course},
+    get speed(){return v},get distance(){return dist},get grade(){return grade},get course(){return course},get _sc(){return SC},
   };
 })();
 
@@ -1237,7 +1348,26 @@ async function loadCourse(key){
   try{localStorage.setItem("pc_course",key)}catch(e){}
   if(!key){World.setCourse(null);return}
   try{const r=await fetch("courses/"+key+".json");if(!r.ok)throw 0;World.setCourse(await r.json());toast("코스 불러옴: "+World.course.name+" · "+(World.course.length/1000).toFixed(1)+"km")}
-  catch(e){toast("코스를 못 불러왔어요");$("courseSel").value="";World.setCourse(null)}
+  catch(e){toast("코스를 못 불러왔어요");$("courseSel").value="";World.setCourse(null);return}
+  loadScenery(key);
+}
+// 주변 실제 지도(강·건물·논밭·정류장 등)를 오픈스트리트맵에서 받아와 3D로 배치 (한 번 받으면 이 기기에 저장)
+async function loadScenery(key){
+  const ck="pc_osm_v1_"+key;let osm=null;
+  try{const c=localStorage.getItem(ck);if(c)osm=JSON.parse(c)}catch(e){}
+  if(!osm){
+    const P=World.routeLatLng(15).map(p=>p[0]+","+p[1]).join(",");
+    const q=`[out:json][timeout:90];(way["waterway"~"^(river|stream|canal)$"](around:400,${P});way["natural"="water"](around:300,${P});way["building"](around:110,${P});way["landuse"~"^(farmland|forest|residential|meadow|orchard|greenhouse_horticulture)$"](around:120,${P});way["natural"~"^(wood|scrub)$"](around:120,${P});way["highway"]["bridge"="yes"](around:12,${P});node["highway"~"^(traffic_signals|bus_stop)$"](around:25,${P});node["amenity"~"^(convenience|cafe|place_of_worship|fuel|school|restaurant|toilets)$"](around:90,${P});node["shop"="convenience"](around:90,${P});node["place"~"^(village|hamlet|town|neighbourhood|suburb)$"](around:900,${P}););out geom qt;`;
+    toast("주변 지도(강·건물·논밭) 받는 중… 처음 한 번만 30초쯤 걸려요");
+    for(const url of["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter"]){
+      try{const r=await fetch(url,{method:"POST",body:"data="+encodeURIComponent(q),headers:{"Content-Type":"application/x-www-form-urlencoded"}});if(!r.ok)continue;osm=await r.json();break}catch(e){}
+    }
+    if(!osm){toast("주변 지도를 못 받았어요 (가상 풍경으로 달려요)");return}
+    try{localStorage.setItem(ck,JSON.stringify(osm))}catch(e){}
+  }
+  if(!World.course)return;
+  const n=World.setScenery(osm);
+  toast(`실제 지도 반영: 건물 ${n.building||0} · 하천 ${n.water||0} · 마을 ${n.place||0} · 표지물 ${n.poi||0}`);
 }
 $("courseSel").onchange=()=>loadCourse($("courseSel").value);
 try{const ck=localStorage.getItem("pc_course")||"";if(ck){$("courseSel").value=ck;loadCourse(ck)}}catch(e){}
