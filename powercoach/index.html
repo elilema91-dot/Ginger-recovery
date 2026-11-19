@@ -103,7 +103,9 @@
   th{color:var(--muted);font-weight:600;font-size:12px;letter-spacing:.08em}
   td b{font-family:var(--mono)}
   .good{color:#60a5fa;font-weight:800}.bad{color:#f87171;font-weight:800}.high{color:#fb923c;font-weight:800}
-  #summary{display:none;margin-top:14px}
+  #summary{display:none;margin-top:14px;position:relative}
+  .sumX{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:rgba(255,255,255,.08);color:var(--text);font-size:18px;cursor:pointer;z-index:2}
+  #sumBack{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:29}
   .note{font-size:13px;color:var(--muted);line-height:1.7;margin-top:14px;padding:0 4px}
     background:linear-gradient(180deg,#0b1a33 0%,#13264a 55%,#1b2a3a 56%,#2b3b4e 100%)}
   .zone{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.18);margin-top:6px}
@@ -357,11 +359,13 @@
   </div>
 
   <div class="card" id="summary">
+    <button class="sumX" id="btnSumX" aria-label="닫기">✕</button>
     <div class="seg" style="margin-bottom:8px">오늘 훈련 결과</div>
     <table id="sumTbl"></table>
     <div class="bar" style="margin-top:10px">
       <button class="btn primary" id="btnTcx">⬇️ 스트라바용 파일 저장 (TCX)</button>
       <button class="btn" id="btnCopy">📋 결과 복사</button>
+      <button class="btn" id="btnSumClose">닫기</button>
     </div>
     <div class="sub" id="tcxHelp" style="margin-top:8px;line-height:1.6">아이폰: 저장 후 '파일에 저장' → 사파리에서 strava.com/upload/select 열고 그 파일 선택 · 맥북: 다운로드된 파일을 strava.com/upload/select 에서 올리기</div>
   </div>
@@ -373,6 +377,7 @@
     • 스페이스바 = 일시정지/재개. 파워는 3초 평균으로 판단해요.
   </details>
 </div>
+<div id="sumBack"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -575,7 +580,7 @@ function load(){
   segStats=steps.map(()=>({sum:0,n:0,ok:0,low:0,high:0}));
   trace=[];t=0;_npSum4=0;_npN=0;_npWin=[];_npWinSum=0;_npLast=0;
   $("tot").textContent=fmt(total);$("el").textContent="0:00";
-  $("summary").style.display="none";
+  $("summary").style.display="none";if($("sumBack"))$("sumBack").style.display="none";
   updateUI();draw();
 }
 function stepIndex(tt){
@@ -817,7 +822,7 @@ function summary(){
     lines.push(`${s.name}: 평균 ${a}W (목표 ${tt}) · 파란불 ${ok}%`);
   });
   $("sumTbl").innerHTML=rows.join("");
-  $("summary").style.display="block";
+  $("summary").style.display="block";if(matchMedia("(min-width:861px) and (max-height:1000px)").matches)$("sumBack").style.display="block";
   $("summary")._text=lines.join("\n");
 }
 
@@ -1383,6 +1388,8 @@ $("btnPause").onclick=pause; $("btnSkip").onclick=skip; $("btnStop").onclick=()=
 $("simOn").onchange=()=>$("simBox").classList.toggle("show",$("simOn").checked);
 $("simW").oninput=()=>{$("simAuto").checked=false;$("simV").textContent=$("simW").value+"W"};
 $("btnTcx").onclick=saveTCX;
+const closeSum=()=>{$("summary").style.display="none";$("sumBack").style.display="none"};
+$("btnSumX").onclick=closeSum;$("btnSumClose").onclick=closeSum;$("sumBack").onclick=closeSum;
 $("btnCopy").onclick=async()=>{try{await navigator.clipboard.writeText($("summary")._text||"");toast("복사했어요")}catch(e){toast("복사가 안 돼요")}};
 document.addEventListener("keydown",e=>{if(e.code==="Space"&&e.target.tagName!=="INPUT"){e.preventDefault();pause()}});
 restoreLast();
