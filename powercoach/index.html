@@ -292,7 +292,7 @@
       <button class="btn" id="btnHr">❤️ 심박계 연결</button>
       <label class="chk">코스 <select id="courseSel"><option value="">가상 언덕길</option><option value="mangyeong">만경강 메디오폰도 (11/14 · 62km)</option></select></label>
       <label class="chk">트레이너 저항 <select id="resMode" disabled><option value="off">끔</option><option value="erg">ERG · 목표 와트 고정</option><option value="sim" selected>코스 경사 따라 (SIM)</option></select></label>
-      <label class="chk"><input type="checkbox" id="simOn"> 테스트 모드(기기 없이)</label>
+      <label class="chk" id="simLbl" style="display:none"><input type="checkbox" id="simOn"> 테스트 모드</label>
       <label class="chk"><input type="checkbox" id="voiceOn" checked> 음성 안내</label>
     </div>
     <div class="dev" style="margin-top:8px">
@@ -1394,7 +1394,10 @@ $("wkSel").onchange=()=>setWeek();
 $("woSel").onchange=load; $("ftp").onchange=load;
 setMember();
 $("btnPower").onclick=connectPower; $("btnHr").onclick=connectHr;
-$("btnStart").onclick=()=>{say("훈련을 시작합니다",true);start()};
+// 파워미터(또는 트레이너)가 연결돼 있어야만 시작 (개발 확인용 ?test=1 주소에서만 테스트 모드 보임)
+const DEV=new URLSearchParams(location.search).has("test");if(DEV)$("simLbl").style.display="";else{$("simOn").checked=false}
+function powerReady(){return $("dP").classList.contains("on")||(Date.now()-lastPowerAt<5000)||(DEV&&$("simOn").checked)}
+$("btnStart").onclick=()=>{if(!powerReady()){toast("먼저 🔗 파워미터/트레이너를 연결해 주세요");say("파워미터를 먼저 연결해 주세요",true);return}say("훈련을 시작합니다",true);start()};
 $("btnPause").onclick=pause; $("btnSkip").onclick=skip; $("btnStop").onclick=()=>{if(running)finish()};
 $("simOn").onchange=()=>$("simBox").classList.toggle("show",$("simOn").checked);
 $("simW").oninput=()=>{$("simAuto").checked=false;$("simV").textContent=$("simW").value+"W"};
