@@ -75,6 +75,10 @@
   .tInfo{display:none}
   .arena{margin-top:14px;border-radius:20px;border:1px dashed rgba(255,255,255,.25);background:linear-gradient(180deg,#0b1a33 0%,#13264a 55%,#1b2a3a 56%,#2b3b4e 100%);min-height:220px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);font-size:15px;line-height:1.6}
   .arena small{font-size:12px;opacity:.8}
+  .arena{position:relative;overflow:hidden;border-style:solid}
+  #world{position:absolute;inset:0;width:100%;height:100%;display:block;margin:0;border:none;border-radius:inherit;background:transparent}
+  .spd{display:flex;justify-content:center;gap:18px;margin-top:6px;font-size:13px;color:var(--muted)}
+  .spd b{font-family:var(--mono);font-size:20px;color:var(--text);font-weight:800}
   .side{display:grid;gap:14px}
   .seg{font-size:20px;font-weight:800;letter-spacing:-.01em}
   .big{font-family:var(--mono);font-size:64px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1;letter-spacing:-.03em;margin-top:4px}
@@ -310,7 +314,7 @@
         <div class="zbar" id="zbar"></div>
         <div class="zlegend"><span>회색 Z1</span><span style="color:#60a5fa">파랑 Z2</span><span style="color:#4ade80">초록 Z3</span><span style="color:#facc15">노랑 Z4</span><span style="color:#fb923c">주황 Z5</span><span style="color:#f87171">빨강 Z6</span></div>
       </div>
-      <div class="arena" id="arena"><span>🚴 가상 라이딩 애니메이션 자리<br><small>속도에 맞춰 캐릭터가 달리는 공간 (준비 중)</small></span></div>
+      <div class="arena" id="arena"><canvas id="world"></canvas></div>
     </div>
     <div class="side">
       <div class="card">
@@ -319,6 +323,7 @@
         <div class="big" id="segLeft">--:--</div>
         <div class="prog"><i id="segProg"></i></div>
         <div class="next" id="next">다음: -</div>
+        <div class="spd"><span><b id="spdV">0.0</b> km/h</span><span><b id="distV">0.00</b> km</span></div>
       </div>
       <div class="row" id="rowNP">
         <div class="stat"><div class="k">NP (노멀라이즈드)</div><div class="v" id="np">--</div></div>
@@ -489,8 +494,8 @@ G.cad=(F)=>({name:`케이던스 드릴 50분 (${W(F,.55)}~${W(F,.68)}W · 100rpm
 const z2=m=>F=>G.z2(m,F), rec=m=>F=>G.rec(m,F), test=F=>G.test(F), cad=F=>G.cad(F);
 const sw=(n,m)=>F=>G.sweet(n,m,F), vo=(n,m,p)=>F=>G.vo2(n,m,p,F), th=(n,m)=>F=>G.thr(n,m,F), tp=(n,m)=>F=>G.tempo(n,m,F);
 const lc=(n,m)=>F=>G.lowcad(n,m,.80,.88,F), lcs=(n,m)=>F=>G.lowcad(n,m,.88,.94,F), lct=(n,m)=>F=>G.lowcad(n,m,.95,1.02,F);
-function mkProgram(name, rows, notes){
-  return {name, start:new Date(2026,10,17), weeks: rows.map((r,i)=>{
+function mkProgram(name, rows, notes, kg){
+  return {name, kg, start:new Date(2026,10,17), weeks: rows.map((r,i)=>{
     const F=r[0], w={};
     [["a","핵심1 · "],["b","핵심2 · "],["c","존2 · "]].forEach(([k,pre],j)=>{const wo=r[j+1](F); wo.name=pre+wo.name; w[k]=wo});
     const ph=i<4?"기초":i<8?"빌드":"피크";
@@ -498,22 +503,22 @@ function mkProgram(name, rows, notes){
   })};
 }
 const PROGRAMS={
-  me:{name:"생강차 (나)", weeks:[{label:"대회 주", ftp:280, workouts:ME_WORKOUTS}]},
+  me:{name:"생강차 (나)", kg:61, weeks:[{label:"대회 주", ftp:280, workouts:ME_WORKOUTS}]},
   park: mkProgram("박은영",[
     [175, z2(45), cad, z2(60)], [175, z2(50), lc(2,8), z2(60)], [180, tp(2,10), lc(3,8), z2(60)], [180, z2(40), test, z2(40)],
     [185, sw(2,10), lc(3,8), z2(60)], [185, sw(2,12), vo(2,4,1.20), z2(60)], [190, sw(3,10), vo(3,4,1.20), z2(70)], [190, z2(40), rec(40), z2(50)],
     [195, th(2,8), sw(2,15), z2(70)], [195, th(2,10), vo(2,5,1.15), z2(70)], [200, th(3,8), vo(3,5,1.15), z2(60)], [200, z2(40), test, rec(40)],
-  ],{3:"테스트",4:"테스트값으로 수정",7:"회복 주",11:"테스트"}),
+  ],{3:"테스트",4:"테스트값으로 수정",7:"회복 주",11:"테스트"},63),
   jung: mkProgram("정연욱",[
     [220, z2(60), lc(2,8), z2(75)], [220, lc(3,8), cad, z2(75)], [225, tp(2,12), lc(3,10), z2(90)], [225, z2(45), test, z2(45)],
     [230, sw(2,12), lcs(3,8), z2(90)], [230, sw(3,10), vo(3,4,1.18), z2(90)], [235, sw(2,15), lcs(3,10), z2(90)], [235, z2(45), rec(40), z2(60)],
     [240, th(2,10), vo(4,4,1.18), z2(90)], [240, th(3,8), lct(2,8), z2(90)], [245, th(2,12), vo(3,5,1.15), z2(75)], [245, z2(45), test, rec(40)],
-  ],{3:"테스트",4:"테스트값으로 수정",7:"회복 주",11:"테스트"}),
+  ],{3:"테스트",4:"테스트값으로 수정",7:"회복 주",11:"테스트"},56),
   kang: mkProgram("강승연",[
     [155, test, z2(45), z2(60)], [155, cad, z2(50), z2(75)], [155, tp(2,8), lc(2,6), z2(90)], [155, z2(45), rec(40), z2(60)],
     [160, tp(2,12), lc(3,6), z2(90)], [160, sw(2,10), lc(3,8), z2(90)], [165, sw(2,12), tp(3,10), z2(100)], [165, z2(45), rec(40), z2(60)],
     [170, sw(3,10), lcs(3,8), z2(100)], [170, th(2,8), sw(2,15), z2(90)], [175, th(2,10), vo(3,3,1.10), z2(75)], [175, z2(45), test, rec(40)],
-  ],{0:"테스트",1:"테스트값으로 수정",3:"회복 주",7:"회복 주",11:"테스트"}),
+  ],{0:"테스트",1:"테스트값으로 수정",3:"회복 주",7:"회복 주",11:"테스트"},57),
 };
 let WORKOUTS=ME_WORKOUTS;
 
@@ -558,6 +563,7 @@ function judge(w,tg){
 }
 
 function load(){
+  if(typeof World!=="undefined")World.reset();
   const key=$("woSel").value;
   steps=WORKOUTS[key].steps();
   starts=[];total=0;
@@ -982,12 +988,162 @@ async function connectHr(){
 }
 
 
+// ---------- 가상 라이딩 (로우폴리 3D · 외부 라이브러리 없이 캔버스로 그림) ----------
+const World=(()=>{
+  const cv=document.getElementById("world"); if(!cv) return {tick(){}};
+  const g=cv.getContext("2d");
+  // ---- 벡터 ----
+  const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]], add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]], mul=(a,s)=>[a[0]*s,a[1]*s,a[2]*s];
+  const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2], cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const nrm=a=>{const l=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/l,a[1]/l,a[2]/l]};
+  // ---- 메쉬 빌더: 삼각형 = [v0,v1,v2,color] ----
+  function M(){return []}
+  function tri(m,a,b,c,col){m.push([a,b,c,col])}
+  function basis(d){d=nrm(d);const a=Math.abs(d[1])<.9?[0,1,0]:[1,0,0];const u=nrm(cross(d,a));return [u,cross(d,u)]}
+  function cyl(m,p0,p1,r0,col,n=6,r1=r0,caps=true){
+    const [u,v]=basis(sub(p1,p0)),A=[],B=[];
+    for(let i=0;i<n;i++){const t=i/n*Math.PI*2,c=Math.cos(t),s=Math.sin(t);
+      A.push(add(p0,add(mul(u,r0*c),mul(v,r0*s))));B.push(add(p1,add(mul(u,r1*c),mul(v,r1*s))))}
+    for(let i=0;i<n;i++){const j=(i+1)%n;tri(m,A[i],B[i],B[j],col);tri(m,A[i],B[j],A[j],col);
+      if(caps){tri(m,p0,A[j],A[i],col);if(r1>0)tri(m,p1,B[i],B[j],col)}}
+  }
+  function box(m,c,s,col){const [hx,hy,hz]=[s[0]/2,s[1]/2,s[2]/2],P=[];
+    for(const x of[-hx,hx])for(const y of[-hy,hy])for(const z of[-hz,hz])P.push([c[0]+x,c[1]+y,c[2]+z]);
+    for(const[a,b,cc,d]of[[0,1,3,2],[4,6,7,5],[0,4,5,1],[2,3,7,6],[0,2,6,4],[1,5,7,3]]){tri(m,P[a],P[b],P[cc],col);tri(m,P[a],P[cc],P[d],col)}}
+  const ICO=(()=>{const t=(1+Math.sqrt(5))/2;let V=[[-1,t,0],[1,t,0],[-1,-t,0],[1,-t,0],[0,-1,t],[0,1,t],[0,-1,-t],[0,1,-t],[t,0,-1],[t,0,1],[-t,0,-1],[-t,0,1]].map(nrm);
+    let F=[[0,11,5],[0,5,1],[0,1,7],[0,7,10],[0,10,11],[1,5,9],[5,11,4],[11,10,2],[10,7,6],[7,1,8],[3,9,4],[3,4,2],[3,2,6],[3,6,8],[3,8,9],[4,9,5],[2,4,11],[6,2,10],[8,6,7],[9,8,1]];
+    const l0={V:V.slice(),F:F.slice()};const cache={};const mid=(a,b)=>{const k=a<b?a+"_"+b:b+"_"+a;if(cache[k]==null){V.push(nrm(add(V[a],V[b])));cache[k]=V.length-1}return cache[k]};
+    const NF=[];for(const[a,b,c]of F){const ab=mid(a,b),bc=mid(b,c),ca=mid(c,a);NF.push([a,ab,ca],[b,bc,ab],[c,ca,bc],[ab,bc,ca])}
+    return [l0,{V,F:NF}]})();
+  function ico(m,c,r,col,sub=1,sc=[1,1,1],topOnly=false,jit=0,seed=1){const {V,F}=ICO[sub];let s=seed;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647};
+    const W=V.map(v=>{const k=1+jit*(rnd()*2-1);return [c[0]+r*sc[0]*v[0]*k,c[1]+r*sc[1]*v[1]*k,c[2]+r*sc[2]*v[2]*k]});
+    for(const[a,b,cc]of F){if(topOnly&&Math.min(V[a][1],V[b][1],V[cc][1])<-.05)continue;tri(m,W[a],W[b],W[cc],col)}}
+  function torus(m,c,R,r,col,n=12,k=4,rot=0){const P=(i,j)=>{const a=i/n*Math.PI*2+rot,b=j/k*Math.PI*2;return [c[0]+(R+r*Math.cos(b))*Math.cos(a),c[1]+(R+r*Math.cos(b))*Math.sin(a),c[2]+r*Math.sin(b)]};
+    for(let i=0;i<n;i++)for(let j=0;j<k;j++){tri(m,P(i,j),P(i+1,j),P(i+1,j+1),col);tri(m,P(i,j),P(i+1,j+1),P(i,j+1),col)}}
+
+  // ---- 색 ----
+  const C={tire:[52,56,66],rim:[240,240,245],metal:[170,176,186],dark:[40,44,52],skin:[255,210,178],white:[255,255,255],shorts:[40,52,90],cheek:[255,160,150],goggle:[40,40,60]};
+  const KITS={me:{jersey:[110,190,255],helmet:[130,230,190],frame:[255,122,110]},park:{jersey:[255,150,190],helmet:[255,255,255],frame:[120,200,255]},
+    jung:{jersey:[255,214,90],helmet:[90,110,200],frame:[60,60,70]},kang:{jersey:[180,150,255],helmet:[255,200,120],frame:[90,200,170]}};
+  let kit=KITS.me;
+
+  // ---- 라이더 + 자전거 (매 프레임 다시 만듦: 다리·바퀴가 돌아가니까) ----
+  function rider(crank,wheel){
+    const m=M(),R=.34,J=kit.jersey,FR=kit.frame;
+    const rw=[-.52,R,0],fw=[.52,R,0],bb=[0,.30,0],st=[-.14,.80,0],ht=[.40,.80,0],hb=[.44,.66,0];
+    for(const wc of[rw,fw]){torus(m,wc,R-.03,.035,C.tire,12,4);torus(m,wc,R-.075,.018,C.rim,12,3);
+      cyl(m,add(wc,[0,0,-.04]),add(wc,[0,0,.04]),.04,C.metal,6);
+      for(let k=0;k<3;k++){const a=k*Math.PI/3+wheel,d=[(R-.08)*Math.cos(a),(R-.08)*Math.sin(a),0];cyl(m,sub(wc,d),add(wc,d),.008,C.metal,3,.008,false)}}
+    const T=.032;cyl(m,bb,st,T,FR);cyl(m,bb,hb,T*1.1,FR);cyl(m,add(st,[.03,-.04,0]),ht,T,FR);cyl(m,ht,hb,T*1.15,FR);
+    for(const s of[-1,1]){cyl(m,bb,add(rw,[0,0,.045*s]),T*.75,FR,5);cyl(m,st,add(rw,[0,0,.045*s]),T*.7,FR,5);cyl(m,hb,add(fw,[0,0,.05*s]),T*.7,FR,5)}
+    cyl(m,st,add(st,[-.03,.10,0]),.016,C.metal,5);box(m,add(st,[-.03,.12,0]),[.20,.035,.09],C.dark);
+    const stem=add(ht,[.08,.04,0]);cyl(m,ht,stem,.018,C.metal,5);cyl(m,add(stem,[0,0,-.2]),add(stem,[0,0,.2]),.018,C.dark,5);
+    for(const s of[-1,1])cyl(m,add(stem,[0,0,.2*s]),add(stem,[.07,-.08,.2*s]),.017,C.dark,5);
+    const ped=[];for(const[s,ph]of[[1,crank],[-1,crank+Math.PI]]){const p=add(bb,[.17*Math.cos(ph),.17*Math.sin(ph),.07*s]);
+      cyl(m,add(bb,[0,0,.05*s]),p,.014,C.metal,4);box(m,add(p,[0,0,.03*s]),[.10,.02,.07],C.dark);ped.push(add(p,[0,.03,.03*s]))}
+    cyl(m,add(bb,[0,0,-.06]),add(bb,[0,0,.06]),.06,C.metal,8);
+    // 몸
+    const hip=add(st,[0,.16,0]),sh=[.20,1.20,0];
+    [1,-1].forEach((s,i)=>{const p=ped[i],h=add(hip,[0,0,.09*s]),d=Math.hypot(...sub(p,h)),L=.33,mid=mul(add(h,p),.5);
+      const bend=Math.sqrt(Math.max(0,L*L-(d/2)*(d/2))),dv=mul(sub(p,h),1/d),perp=[-dv[1],dv[0],0];
+      const knee=add(add(mid,mul(perp,bend*.9)),[.05,0,.02*s]);
+      cyl(m,h,knee,.075,C.shorts,7,.065);cyl(m,knee,add(p,[0,.08,0]),.062,C.skin,7,.045);
+      cyl(m,add(p,[0,.08,0]),add(p,[0,.04,0]),.046,C.white,7);box(m,add(p,[.03,.01,0]),[.15,.06,.08],C.white)});
+    ico(m,add(hip,[0,.03,0]),.15,C.shorts,1,[1.05,.8,1.15]);
+    cyl(m,add(hip,[.02,.06,0]),sh,.15,J,8,.17);ico(m,sh,.17,J,1,[1,.9,1.1]);
+    const mw=mul(add(hip,sh),.5);cyl(m,add(mw,[.01,-.02,0]),add(mw,[.04,.03,0]),.168,C.white,8);
+    for(const s of[-1,1]){const a0=add(sh,[0,-.02,.15*s]),grip=add(stem,[.05,-.05,.19*s]),el=add(mul(add(a0,grip),.5),[0,.05,.03*s]);
+      cyl(m,a0,el,.055,J,6,.045);cyl(m,el,grip,.042,C.skin,6,.035);ico(m,grip,.045,C.skin,0)}
+    const head=add(sh,[.16,.24,0]);cyl(m,add(sh,[.05,.05,0]),add(head,[-.03,-.12,0]),.06,C.skin,6);
+    ico(m,head,.21,C.skin,1,[1,.95,1]);ico(m,add(head,[-.01,.03,0]),.235,kit.helmet,1,[1.08,.9,1.04],true);
+    for(const k of[-1,0,1])box(m,add(head,[-.03,.205-.02*Math.abs(k),.08*k]),[.26,.025,.03],C.white);
+    box(m,add(head,[.19,.03,0]),[.05,.07,.30],C.goggle);
+    for(const s of[-1,1])ico(m,add(head,[.17,-.07,.12*s]),.035,C.cheek,0);
+    return m;
+  }
+  // ---- 풍경 오브젝트 (한 번 만들어 두고 위치만 옮김) ----
+  const TREE_G=[[96,180,110],[120,200,120],[80,160,100]],TREE_W=[[255,180,120],[250,150,160],[255,210,120]];
+  const PROPS=[];
+  for(let i=0;i<3;i++){const m=M(),h=1.0+i*.3;cyl(m,[0,0,0],[0,h*.35,0],.07,[150,105,80],5);cyl(m,[0,h*.3,0],[0,h*1.25,0],.40,TREE_G[i],6,0);cyl(m,[0,h*.8,0],[0,h*1.55,0],.28,TREE_G[(i+1)%3],6,0);PROPS.push(m)}
+  for(let i=0;i<3;i++){const m=M();cyl(m,[0,0,0],[0,.45,0],.07,[150,105,80],5);ico(m,[0,.8,0],.42,TREE_W[i],0,[1,1,1],false,.15,i+3);PROPS.push(m)}
+  {const m=M();ico(m,[0,.05,0],.13,[200,200,210],0,[1.3,.7,1],false,.25,9);PROPS.push(m)}
+  {const m=M();for(const[x,c]of[[0,[255,120,140]],[.12,[255,220,90]],[-.1,[255,255,255]]]){cyl(m,[x,0,x*.5],[x,.14,x*.5],.008,[90,160,90],3);ico(m,[x,.16,x*.5],.035,c,0)}PROPS.push(m)}
+  {const m=M();box(m,[0,.55,0],[1.1,1.1,1.0],[255,244,230]);cyl(m,[-.6,1.1,0],[.6,1.1,0],.62,[230,110,90],4,.62);box(m,[.56,.35,0],[.02,.7,.35],[150,105,80]);box(m,[.56,.75,.3],[.02,.25,.25],[160,210,255]);PROPS.push(m)}
+  const CLOUD=(()=>{const m=M();for(const[x,y,r]of[[0,0,1.2],[1.1,.2,.9],[-1.0,.1,.8],[.4,.6,.8]])ico(m,[x,y,0],r,[255,255,255],0,[1,.75,.8],false,.1,7);return m})();
+  function hash(i){let x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)}
+
+  // ---- 물리: 파워 → 속도 ----
+  let v=0,dist=0,crank=0,wheel=0,kg=65,lastT=performance.now(),bob=0;
+  function solveV(P,dt){const m=kg+8,Crr=.004,CdA=.32,rho=1.2,G=9.81;const vv=Math.max(v,.5);
+    const F=Crr*m*G+.5*rho*CdA*vv*vv,a=(P/vv-F)/m;v=Math.max(0,v+a*dt);if(P<1&&v<.3)v=0}
+  // ---- 카메라·투영 ----
+  const L=nrm([.4,.85,.35]),SKY0=[150,205,255],SKY1=[255,232,222],GR0=[140,206,130],GR1=[198,226,190];
+  let W=0,H=0,dpr=1;
+  function resize(){const r=cv.getBoundingClientRect();dpr=Math.min(1.5,window.devicePixelRatio||1);const w=Math.max(10,Math.round(r.width*dpr)),h=Math.max(10,Math.round(r.height*dpr));if(w!==W||h!==H){W=cv.width=w;H=cv.height=h}}
+  function frame(now){
+    const dt=Math.min(.1,(now-lastT)/1000);lastT=now;resize();
+    const live=typeof running!=="undefined"&&running&&!paused;
+    const P=live?(typeof avg3==="function"?avg3():0):0;solveV(P,dt);
+    if(live)dist+=v*dt;
+    const cad=(typeof cadence==="number"&&cadence>0&&live)?cadence:(v>0.5?Math.min(100,60+v*1.2):0);
+    crank-=cad/60*2*Math.PI*dt;wheel-=v/.34*dt;bob+=dt*cad/60*2*Math.PI;
+    const rx=dist,sway=Math.sin(bob)*.006;
+    const eye=[rx-4.6,2.05+Math.sin(now/2300)*.03,.55],tgt=[rx+3.5,1.05,0];
+    const f=nrm(sub(tgt,eye)),r=nrm(cross(f,[0,1,0])),u=cross(r,f),foc=(H/2)/Math.tan(38*Math.PI/360);
+    const proj=p=>{const d=sub(p,eye),z=dot(d,f);return z<.05?null:[W/2+foc*dot(d,r)/z,H/2-foc*dot(d,u)/z,z]};
+    // 하늘
+    const hz=proj([rx+4000,0,0]),hy=hz?hz[1]:H*.4;
+    let gr=g.createLinearGradient(0,0,0,hy);gr.addColorStop(0,`rgb(${SKY0})`);gr.addColorStop(1,`rgb(${SKY1})`);g.fillStyle=gr;g.fillRect(0,0,W,hy+1);
+    gr=g.createLinearGradient(0,hy,0,H);gr.addColorStop(0,`rgb(${GR1})`);gr.addColorStop(.25,`rgb(${GR0})`);gr.addColorStop(1,`rgb(${GR0.map(c=>c*.92|0)})`);g.fillStyle=gr;g.fillRect(0,hy,W,H-hy);
+    // 도로
+    const nx=eye[0]+.3,fx=rx+400,poly=(pts,col)=>{const q=pts.map(proj);if(q.some(x=>!x))return;g.beginPath();g.moveTo(q[0][0],q[0][1]);for(const p of q.slice(1))g.lineTo(p[0],p[1]);g.closePath();g.fillStyle=col;g.fill()};
+    poly([[nx,0,-1.05],[nx,0,1.05],[fx,0,1.05],[fx,0,-1.05]],"rgb(214,208,202)");
+    poly([[nx,0,-1.05],[nx,0,-.95],[fx,0,-.95],[fx,0,-1.05]],"rgb(245,245,245)");poly([[nx,0,.95],[nx,0,1.05],[fx,0,1.05],[fx,0,.95]],"rgb(245,245,245)");
+    for(let x=Math.floor(nx/3)*3;x<rx+70;x+=3){if(x+1.4<nx)continue;poly([[Math.max(x,nx),0,-.03],[Math.max(x,nx),0,.03],[x+1.4,0,.03],[x+1.4,0,-.03]],"rgb(255,255,255)")}
+    // 3D 오브젝트
+    const items=[];
+    const push=(mesh,off,fogOn=true)=>{for(const t of mesh)items.push([t,off,fogOn])};
+    for(let k=0;k<3;k++){const cx=rx*.97+((k*37+11)%60)-10,ci=Math.floor((rx*.03+k*20)/60);push(CLOUD,[rx+40+((k*31+hash(ci+k)*40)%70)-5,7+k*1.3,-14+k*12],false)}
+    const T0=Math.floor((eye[0]-1)/2.5),T1=Math.floor((rx+70)/2.5);
+    for(let i=T0;i<=T1;i++){const x=i*2.5;
+      for(const side of[-1,1]){const h=hash(i*2+(side>0?1:0));if(h<.35)continue;
+        const kind=h>.97?8:h>.9?6:h>.82?7:h>.6?Math.floor(hash(i+7)*3):3+Math.floor(hash(i+9)*3);
+        const z=side*(kind===6||kind===7?1.35+hash(i+3)*.6:kind===8?4+hash(i)*3:1.8+hash(i+5)*5);
+        push(PROPS[kind],[x+hash(i+1)*2,0,z])}}
+    push(rider(crank,wheel),[rx,sway,0]);
+    // 투영·정렬
+    const polys=[];
+    for(const[t,o,fogOn]of items){const a=add(t[0],o),b=add(t[1],o),c=add(t[2],o);
+      let n=cross(sub(b,a),sub(c,a));const nl=Math.hypot(...n);if(nl<1e-9)continue;n=mul(n,1/nl);
+      const cen=mul(add(add(a,b),c),1/3);if(dot(n,sub(eye,cen))<0)n=mul(n,-1);
+      const pa=proj(a),pb=proj(b),pc=proj(c);if(!pa||!pb||!pc)continue;
+      if(Math.max(pa[0],pb[0],pc[0])<0||Math.min(pa[0],pb[0],pc[0])>W||Math.max(pa[1],pb[1],pc[1])<0||Math.min(pa[1],pb[1],pc[1])>H)continue;
+      const z=(pa[2]+pb[2]+pc[2])/3,sh=.6+.4*Math.max(0,dot(n,L)),fg=fogOn?Math.min(1,Math.max(0,(z-12)/55)):0;
+      const col=t[3].map((cc,i)=>Math.round(cc*sh*(1-fg)+SKY1[i]*fg));
+      polys.push([z,pa,pb,pc,`rgb(${col})`])}
+    polys.sort((A,B)=>B[0]-A[0]);
+    g.lineJoin="round";g.lineWidth=.6;
+    for(const[,a,b,c,col]of polys){g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.lineTo(c[0],c[1]);g.closePath();g.fillStyle=col;g.strokeStyle=col;g.fill();g.stroke()}
+    // 속도·거리 표시
+    const sp=document.getElementById("spdV"),di=document.getElementById("distV");
+    if(sp)sp.textContent=(v*3.6).toFixed(1);if(di)di.textContent=(dist/1000).toFixed(2);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+  return {
+    setRider(key,weight){kit=KITS[key]||KITS.me;if(weight)kg=weight},
+    reset(){v=0;dist=0},
+    get speed(){return v},get distance(){return dist},
+  };
+})();
+
 // ---------- 초기화 ----------
 function fillSel(sel,items){sel.innerHTML="";items.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;o.textContent=label;sel.appendChild(o)})}
 function curProg(){return PROGRAMS[$("memSel").value]||PROGRAMS.me}
 function curWeek(){const p=curProg();return p.weeks[Math.min(+$("wkSel").value||0,p.weeks.length-1)]}
 function setMember(keepWo){
   const p=curProg(), multi=p.weeks.length>1;
+  if(typeof World!=="undefined")World.setRider($("memSel").value,p.kg);
   $("wkSel").style.display=multi?"":"none";
   if(multi&&!keepWo){
     fillSel($("wkSel"),p.weeks.map((w,i)=>[String(i),w.label]));
