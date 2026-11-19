@@ -740,6 +740,11 @@ function tick(){
   if(s.kind!=="free"&&left<=3&&left>=1&&idx<steps.length-1){beep(left===1?1200:800,left===1?260:140)}
   if((s.kind==="int")&&left===60&&s.dur>=180) say("1분 남았어요. 버티세요!",true);
   if((s.kind==="int")&&left===30&&s.dur<=60) say("30초!",true);
+  // 10분마다 물 마시기 (다른 안내와 겹치면 몇 초 뒤에)
+  if(t>0&&Math.floor(t)%600===0) tick._water=true;
+  if(tick._water&&Date.now()-lastSayAt>4000&&!(left<=3&&s.kind!=="free")&&s.kind!=="sprint"){
+    tick._water=false;say(`${Math.round(t/60)}분 지났어요. 물 한 모금 드세요.`,true);toast("💧 물 한 모금 드세요");
+  }
 
   // 기록
   trace.push({t,w,c:cadence,h:hrNow,ts:Date.now()});
